@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.exam.mapper.exam.ExamMapper">
+
+    <!-- 查询考试监控统计信息 -->
+    <select id="selectExamMonitorStats" resultType="java.util.HashMap">
+        SELECT
+            COUNT(DISTINCT eu.user_id) as total_students,
+            SUM(CASE WHEN eu.exam_status = 1 THEN 1 ELSE 0 END) as online_count,
+            SUM(CASE WHEN eu.exam_status = 2 THEN 1 ELSE 0 END) as submitted_count,
+            SUM(CASE WHEN eu.exam_status = 3 THEN 1 ELSE 0 END) as absent_count,
+            (SELECT COUNT(*) FROM exam_session WHERE exam_id = #{examId} AND tab_switch_count > 3) as abnormal_count
+        FROM exam_user eu
+        WHERE eu.exam_id = #{examId}
+    </select>
+
+    <!-- 查询考生的考试列表 -->
+    <select id="selectExamsByUser" resultType="com.example.exam.entity.exam.Exam">
+        SELECT DISTINCT e.* FROM exam e
+        WHERE e.deleted = 0
+        AND e.exam_status IN (0, 1)
+        AND (
+            <!-- 指定考生 -->
+            (e.exam_range_type = 1 AND FIND_IN_SET(#{userId}, e.exam_range_ids) > 0)
+            OR
+            <!-- 指定班级/组织 -->
+            (e.exam_range_type IN (2, 3) AND FIND_IN_SET(#{orgId}, e.exam_range_ids) > 0)
+        )
+        ORDER BY e.start_time DESC
+    </select>
+
+</mapper>
+
