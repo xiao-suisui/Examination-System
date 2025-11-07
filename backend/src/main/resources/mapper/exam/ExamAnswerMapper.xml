@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.exam.mapper.exam.ExamAnswerMapper">
+
+    <!-- 查询需要批改的主观题 -->
+    <select id="selectSubjectiveAnswersForGrading" resultType="com.example.exam.entity.exam.ExamAnswer">
+        SELECT ea.* FROM exam_answer ea
+        INNER JOIN question q ON ea.question_id = q.question_id
+        WHERE ea.exam_id = #{examId}
+        AND ea.deleted = 0
+        AND q.question_type = 'SUBJECTIVE'
+        AND ea.score IS NULL
+        ORDER BY ea.user_id, ea.question_id
+    </select>
+
+    <!-- 统计题目答题情况 -->
+    <select id="selectQuestionStats" resultType="java.util.HashMap">
+        SELECT
+            COUNT(*) as total_count,
+            SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct_count,
+            ROUND(SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as correct_rate,
+            ROUND(AVG(score), 2) as avg_score
+        FROM exam_answer
+        WHERE exam_id = #{examId}
+        AND question_id = #{questionId}
+        AND deleted = 0
+    </select>
+
+    <!-- 查询错题列表 -->
+    <select id="selectWrongAnswers" resultType="com.example.exam.entity.exam.ExamAnswer">
+        SELECT ea.* FROM exam_answer ea
+        WHERE ea.user_id = #{userId}
+        AND ea.is_correct = 0
+        AND ea.deleted = 0
+        <if test="examId != null">
+            AND ea.exam_id = #{examId}
+        </if>
+        ORDER BY ea.exam_id DESC, ea.question_id
+    </select>
+
+    <!-- 统计成绩分布 -->
+    <select id="selectScoreDistribution" resultType="java.util.HashMap">
+        SELECT
+            score_range,
+            COUNT(*) as count
+        FROM (
+            SELECT
+                session_id,
+                CASE
+                    WHEN total_score &lt; 60 THEN '0-59'
+                    WHEN total_score &lt; 70 THEN '60-69'
+                    WHEN total_score &lt; 80 THEN '70-79'
+                    WHEN total_score &lt; 90 THEN '80-89'
+                    ELSE '90-100'
+                END as score_range
+            FROM exam_session
+            WHERE exam_id = #{examId}
+            AND session_status IN ('SUBMITTED', 'GRADED')
+            AND total_score IS NOT NULL
+        ) t
+        GROUP BY score_range
+        ORDER BY score_range
+    </select>
+
+</mapper>
+

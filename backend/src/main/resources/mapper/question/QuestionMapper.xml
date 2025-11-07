@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.exam.mapper.question.QuestionMapper">
+
+    <!-- 分页查询题目（多条件筛选） -->
+    <select id="selectQuestionPage" resultType="com.example.exam.entity.question.Question">
+        SELECT * FROM question
+        WHERE deleted = 0
+        <if test="bankId != null">
+            AND bank_id = #{bankId}
+        </if>
+        <if test="questionType != null">
+            AND question_type = #{questionType}
+        </if>
+        <if test="difficulty != null">
+            AND difficulty = #{difficulty}
+        </if>
+        <if test="auditStatus != null">
+            AND audit_status = #{auditStatus}
+        </if>
+        <if test="knowledgeId != null">
+            AND FIND_IN_SET(#{knowledgeId}, knowledge_ids) > 0
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND question_content LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 随机抽取题目（核心算法） -->
+    <select id="selectRandomQuestions" resultType="com.example.exam.entity.question.Question">
+        SELECT * FROM question
+        WHERE deleted = 0
+        AND status = 1
+        AND audit_status = 2
+        <if test="bankId != null">
+            AND bank_id = #{bankId}
+        </if>
+        <if test="questionType != null">
+            AND question_type = #{questionType}
+        </if>
+        <if test="difficulty != null">
+            AND difficulty = #{difficulty}
+        </if>
+        <if test="knowledgeIds != null and knowledgeIds.size() > 0">
+            AND (
+            <foreach collection="knowledgeIds" item="knowledgeId" separator=" OR ">
+                FIND_IN_SET(#{knowledgeId}, knowledge_ids) > 0
+            </foreach>
+            )
+        </if>
+        <if test="excludeIds != null and excludeIds.size() > 0">
+            AND question_id NOT IN
+            <foreach collection="excludeIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!-- 批量查询题目（含选项） -->
+    <select id="selectQuestionsWithOptions" resultMap="questionWithOptionsMap">
+        SELECT
+            q.*,
+            qo.option_id, qo.option_seq, qo.option_content, qo.is_correct,
+            qo.score_ratio, qo.option_type, qo.assoc_flag, qo.correct_order,
+            qo.option_analysis, qo.option_image, qo.sort as option_sort
+        FROM question q
+        LEFT JOIN question_option qo ON q.question_id = qo.question_id AND qo.deleted = 0
+        WHERE q.question_id IN
+        <foreach collection="questionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND q.deleted = 0
+        ORDER BY q.question_id, qo.sort
+    </select>
+
+    <!-- 题目含选项的结果映射 -->
+    <resultMap id="questionWithOptionsMap" type="com.example.exam.entity.question.Question">
+        <id property="questionId" column="question_id"/>
+        <result property="bankId" column="bank_id"/>
+        <result property="orgId" column="org_id"/>
+        <result property="questionContent" column="question_content"/>
+        <result property="questionType" column="question_type"/>
+        <result property="defaultScore" column="default_score"/>
+        <result property="difficulty" column="difficulty"/>
+        <result property="knowledgeIds" column="knowledge_ids"/>
+        <result property="analysis" column="analysis"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="createTime" column="create_time"/>
+        <collection property="options" ofType="com.example.exam.entity.question.QuestionOption">
+            <id property="optionId" column="option_id"/>
+            <result property="optionSeq" column="option_seq"/>
+            <result property="optionContent" column="option_content"/>
+            <result property="isCorrect" column="is_correct"/>
+            <result property="scoreRatio" column="score_ratio"/>
+            <result property="optionType" column="option_type"/>
+            <result property="assocFlag" column="assoc_flag"/>
+            <result property="correctOrder" column="correct_order"/>
+            <result property="optionAnalysis" column="option_analysis"/>
+            <result property="optionImage" column="option_image"/>
+            <result property="sort" column="option_sort"/>
+        </collection>
+    </resultMap>
+
+</mapper>
+

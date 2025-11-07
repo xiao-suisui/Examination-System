@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4.21-success)](https://vuejs.org/)
-[![Progress](https://img.shields.io/badge/progress-50%25-yellow)](MIGRATION_PROGRESS_REPORT.md)
+[![Progress](https://img.shields.io/badge/progress-50%25-yellow)](docs/learn/MIGRATION_PROGRESS_REPORT.md)
 
 > 一个功能完整的在线考试系统，支持8种题型、随机组卷、自动判分、防作弊等核心功能。
 
@@ -279,9 +279,9 @@ Examination-System/
 
 ## 📚 文档
 
-- [📖 改造指南](EXAM_SYSTEM_MIGRATION_GUIDE.md) - 详细的改造方案和技术选型
-- [📊 进度报告](MIGRATION_PROGRESS_REPORT.md) - 实时更新的改造进度
-- [🚀 快速开始](QUICK_START.md) - 快速启动指南
+- [📖 改造指南](docs/learn/EXAM_SYSTEM_MIGRATION_GUIDE.md) - 详细的改造方案和技术选型
+- [📊 进度报告](docs/learn/MIGRATION_PROGRESS_REPORT.md) - 实时更新的改造进度
+- [🚀 快速开始](docs/learn/QUICK_START.md) - 快速启动指南
 - [💾 数据完整性指南](database/DATA_INTEGRITY_GUIDE.md) - 数据库设计说明
 - [📝 需求文档](考试系统需求文档（V1.0%20-%20完整版）.md) - 完整业务需求
 

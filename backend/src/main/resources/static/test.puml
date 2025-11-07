@@ -1,0 +1,92 @@
+@startuml 智慧考试系统UML用例图
+' 样式美化（可选）
+skinparam actor {
+    BackgroundColor #E8F4FD
+    BorderColor #2E86AB
+    FontName "微软雅黑"
+}
+skinparam usecase {
+    BackgroundColor #F0F8FF
+    BorderColor #1E90FF
+    FontName "微软雅黑"
+}
+skinparam arrow {
+    Thickness 1.2
+    FontName "微软雅黑"
+}
+
+' 1. 定义「参与者」（UML标准：actor）
+actor 学生 as Student
+actor 教师 as Teacher
+actor 系统管理员 as Admin
+actor 智慧考试系统 as System
+
+' 2. 定义「用例」（UML标准：usecase）
+usecase "登录系统" as UC1
+usecase "查看考试列表" as UC2
+usecase "参加在线考试" as UC3
+usecase "查看个人成绩" as UC4
+usecase "查看成绩详情" as UC5
+usecase "题库管理" as UC7
+usecase "手动组卷" as UC8
+usecase "发布考试" as UC9
+usecase "监控考试过程" as UC10
+usecase "成绩统计分析" as UC11
+usecase "导出成绩数据" as UC12
+usecase "用户管理" as UC14
+usecase "角色权限管理" as UC15
+usecase "系统监控" as UC16
+usecase "数据备份恢复" as UC17
+usecase "用户认证" as UC18
+usecase "防切屏监控" as UC19
+usecase "自动批改" as UC20
+usecase "数据统计" as UC21
+
+' 3. 「参与者 ↔ 用例」的关联（直接连线表示“可执行用例”）
+Student -- UC1
+Student -- UC2
+Student -- UC3
+Student -- UC4
+Student -- UC5
+
+Teacher -- UC1
+Teacher -- UC7
+Teacher -- UC8
+Teacher -- UC9
+Teacher -- UC10
+Teacher -- UC11
+Teacher -- UC12
+
+Admin -- UC1
+Admin -- UC14
+Admin -- UC15
+Admin -- UC16
+Admin -- UC17
+
+System -- UC18
+System -- UC19
+System -- UC20
+System -- UC21
+
+' 4. 「包含关系」（<<include>>，被包含的用例是“必须执行”的）
+UC3 -[dashed]-> UC1 : <<include>>
+UC3 -[dashed]-> UC19 : <<include>>
+UC7 -[dashed]-> UC1 : <<include>>
+UC8 -[dashed]-> UC7 : <<include>>
+UC9 -[dashed]-> UC8 : <<include>>
+UC10 -[dashed]-> UC9 : <<include>>
+UC11 -[dashed]-> UC20 : <<include>>
+UC11 -[dashed]-> UC21 : <<include>>
+
+' 5. 「扩展关系」（<<extend>>，扩展的用例是“可选执行”的）
+UC4 -[dashed]-> UC3 : <<extend>>
+UC10 -[dashed]-> UC9 : <<extend>>
+UC12 -[dashed]-> UC11 : <<extend>>
+
+' 6. 「依赖关系」（<<depend>>，用例“依赖”系统提供的服务）
+UC1 -[dashed]-> UC18 : <<depend>>
+UC3 -[dashed]-> UC19 : <<depend>>
+UC3 -[dashed]-> UC20 : <<depend>>
+UC11 -[dashed]-> UC21 : <<depend>>
+
+@enduml

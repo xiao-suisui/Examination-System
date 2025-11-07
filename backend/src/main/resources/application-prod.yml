@@ -1,0 +1,92 @@
+# 应用配置，生产环境使用
+server:
+  port: 8080
+
+spring:
+  application:
+    name: survey-system
+
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:Survey}?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 10
+      max-wait: 1000
+      remove-abandoned: true
+      remove-abandoned-timeout: 300
+      log-abandoned: true
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+          time-between-eviction-runs: 30s
+        shutdown-timeout: 200ms
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.survey.model
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# MinIO配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  accessKey: ${MINIO_ACCESS_KEY:minioadmin}
+  secretKey: ${MINIO_SECRET_KEY:minioadmin}
+  bucketName: ${MINIO_BUCKET:survey-system}
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:example.surveySurveySystem2025SecretKey}
+  expiration: ${JWT_EXPIRATION:86400000}  # 默认1天的过期时间（毫秒）
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.survey: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+  file:
+    name: ${LOG_PATH:/tmp}/survey-system.log
