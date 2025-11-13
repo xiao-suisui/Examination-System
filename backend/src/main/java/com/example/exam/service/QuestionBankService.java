@@ -3,6 +3,7 @@ package com.example.exam.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.exam.common.enums.BankType;
 import com.example.exam.entity.question.QuestionBank;
 
 /**
@@ -17,13 +18,16 @@ public interface QuestionBankService extends IService<QuestionBank> {
     /**
      * 分页查询题库
      */
-    IPage<QuestionBank> pageQuestionBanks(Page<QuestionBank> page, String keyword, Boolean
-            isPublic);
+    IPage<QuestionBank> pageQuestionBanks(Page<QuestionBank> page, String keyword, BankType
+            bank);
 
     /**
      * 获取题库统计信息
+     *
+     * @param bankId 题库ID
+     * @return 统计信息
      */
-    Object getQuestionBankStatistics(Long bankId);
+    com.example.exam.dto.QuestionBankStatisticsDTO getQuestionBankStatistics(Long bankId);
 
     /**
      * 导入题目到题库

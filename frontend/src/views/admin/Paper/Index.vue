@@ -45,15 +45,16 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select
-            v-model="searchForm.status"
+            v-model="searchForm.auditStatus"
             placeholder="选择状态"
             clearable
             style="width: 120px"
             @clear="handleSearch"
           >
             <el-option label="草稿" :value="0" />
-            <el-option label="已发布" :value="1" />
-            <el-option label="已归档" :value="2" />
+            <el-option label="待审核" :value="1" />
+            <el-option label="已通过" :value="2" />
+            <el-option label="已拒绝" :value="3" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -68,6 +69,7 @@
       <el-table
         :data="tableData"
         :loading="loading"
+        :row-key="row => row.paperId"
         stripe
         style="width: 100%"
       >
@@ -75,20 +77,21 @@
         <el-table-column prop="paperName" label="试卷名称" min-width="200" show-overflow-tooltip />
         <el-table-column prop="paperType" label="试卷类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getPaperTypeColor(row.paperType)">
+            <el-tag :type="getPaperTypeColor(row.paperType)" v-if="row.paperType !== undefined">
               {{ getPaperTypeName(row.paperType) }}
             </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="totalScore" label="总分" width="80" />
         <el-table-column prop="questionCount" label="题目数" width="80" />
-        <el-table-column prop="duration" label="时长(分钟)" width="100" />
         <el-table-column prop="bankName" label="所属题库" width="150" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="auditStatus" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusColor(row.status)">
-              {{ getStatusName(row.status) }}
+            <el-tag :type="getAuditStatusColor(row.auditStatus)" v-if="row.auditStatus !== undefined">
+              {{ getAuditStatusName(row.auditStatus) }}
             </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
@@ -136,11 +139,11 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="试卷类型" prop="paperType">
-              <el-select v-model="formData.paperType" placeholder="请选择类型" style="width: 100%">
-                <el-option label="正式考试" value="FORMAL" />
-                <el-option label="模拟考试" value="MOCK" />
-                <el-option label="练习卷" value="PRACTICE" />
+            <el-form-item label="组卷方式" prop="paperType">
+              <el-select v-model="formData.paperType" placeholder="请选择组卷方式" style="width: 100%">
+                <el-option label="手动组卷" :value="PAPER_TYPE.MANUAL" />
+                <el-option label="自动组卷" :value="PAPER_TYPE.AUTO" />
+                <el-option label="随机组卷" :value="PAPER_TYPE.RANDOM" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -157,18 +160,6 @@
                   :value="bank.bankId"
                 />
               </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="考试时长" prop="duration">
-              <el-input-number
-                v-model="formData.duration"
-                :min="10"
-                :max="300"
-                controls-position="right"
-                style="width: 100%"
-              />
-              <span style="margin-left: 10px">分钟</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -216,7 +207,7 @@
 
         <!-- 已选题目列表 -->
         <el-form-item label="题目列表" v-if="selectedQuestions.length > 0">
-          <el-table :data="selectedQuestions" style="width: 100%" max-height="300">
+          <el-table :data="selectedQuestions" :row-key="row => row.questionId" style="width: 100%" max-height="300">
             <el-table-column prop="questionContent" label="题目内容" show-overflow-tooltip />
             <el-table-column prop="questionType" label="类型" width="80">
               <template #default="{ row }">
@@ -278,10 +269,10 @@
         </el-form-item>
         <el-form-item label="难度分布">
           <el-radio-group v-model="autoGenerateForm.difficultyMode">
-            <el-radio label="EASY">简单为主</el-radio>
-            <el-radio label="MEDIUM">中等为主</el-radio>
-            <el-radio label="HARD">困难为主</el-radio>
-            <el-radio label="MIXED">均衡分布</el-radio>
+            <el-radio value="EASY">简单为主</el-radio>
+            <el-radio value="MEDIUM">中等为主</el-radio>
+            <el-radio value="HARD">困难为主</el-radio>
+            <el-radio value="MIXED">均衡分布</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -290,6 +281,14 @@
         <el-button type="primary" @click="submitAutoGenerate">生成试卷</el-button>
       </template>
     </el-dialog>
+
+    <!-- 题目选择器 -->
+    <QuestionSelector
+      v-model="questionSelectorVisible"
+      :bank-id="formData.bankId"
+      :existing-questions="selectedQuestions"
+      @confirm="handleQuestionsConfirm"
+    />
   </div>
 </template>
 
@@ -298,8 +297,17 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MagicStick } from '@element-plus/icons-vue'
+import QuestionSelector from '@/components/QuestionSelector.vue'
 import paperApi from '@/api/paper'
 import questionBankApi from '@/api/questionBank'
+import {
+  PAPER_TYPE,
+  getPaperTypeName,
+  getPaperTypeColor,
+  getAuditStatusName,
+  getAuditStatusColor,
+  getQuestionTypeName
+} from '@/utils/enums'
 
 const router = useRouter()
 
@@ -307,7 +315,7 @@ const router = useRouter()
 const searchForm = reactive({
   keyword: '',
   bankId: null,
-  status: null
+  auditStatus: null
 })
 
 // 表格数据
@@ -328,6 +336,7 @@ const dialogTitle = ref('')
 const submitLoading = ref(false)
 const formRef = ref(null)
 const selectedQuestions = ref([])
+const questionSelectorVisible = ref(false)
 
 // 智能组卷对话框
 const autoGenerateVisible = ref(false)
@@ -346,12 +355,12 @@ const autoGenerateForm = reactive({
 const formData = reactive({
   paperId: null,
   paperName: '',
-  paperType: 'FORMAL',
+  paperType: PAPER_TYPE.MANUAL,  // 默认手动组卷
   bankId: null,
-  duration: 120,
   passScore: 60,
   totalScore: 100,
-  description: ''
+  description: '',
+  questions: []  // 试卷题目列表
 })
 
 // 表单验证规则
@@ -364,9 +373,6 @@ const formRules = {
   ],
   bankId: [
     { required: true, message: '请选择题库', trigger: 'change' }
-  ],
-  duration: [
-    { required: true, message: '请输入考试时长', trigger: 'blur' }
   ]
 }
 
@@ -391,7 +397,7 @@ const loadPapers = async () => {
       size: pagination.size,
       keyword: searchForm.keyword || undefined,
       bankId: searchForm.bankId || undefined,
-      status: searchForm.status
+      auditStatus: searchForm.auditStatus
     })
     if (res.code === 200) {
       tableData.value = res.data.records
@@ -414,7 +420,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.bankId = null
-  searchForm.status = null
+  searchForm.auditStatus = null
   handleSearch()
 }
 
@@ -483,12 +489,30 @@ const submitAutoGenerate = async () => {
 
 // 选择题目
 const showQuestionSelector = () => {
-  ElMessage.info('打开题目选择器')
+  if (!formData.bankId) {
+    ElMessage.warning('请先选择题库')
+    return
+  }
+  questionSelectorVisible.value = true
+}
+
+// 确认选择的题目
+const handleQuestionsConfirm = (questions) => {
+  selectedQuestions.value = questions
+  // 更新表单数据
+  formData.questions = questions
+  // 自动计算总分
+  const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0)
+  formData.totalScore = totalScore
+  ElMessage.success(`已选择 ${questions.length} 道题目，总分 ${totalScore} 分`)
 }
 
 // 移除题目
 const removeQuestion = (index) => {
   selectedQuestions.value.splice(index, 1)
+  formData.questions = selectedQuestions.value
+  // 重新计算总分
+  formData.totalScore = selectedQuestions.value.reduce((sum, q) => sum + (q.score || 0), 0)
 }
 
 // 提交表单
@@ -521,47 +545,16 @@ const handleSubmit = async () => {
 const resetForm = () => {
   formData.paperId = null
   formData.paperName = ''
-  formData.paperType = 'FORMAL'
+  formData.paperType = PAPER_TYPE.MANUAL  // 默认手动组卷
   formData.bankId = null
-  formData.duration = 120
   formData.passScore = 60
   formData.totalScore = 100
   formData.description = ''
+  formData.questions = []
   selectedQuestions.value = []
   formRef.value?.resetFields()
 }
 
-// 辅助方法
-const getPaperTypeName = (type) => {
-  const map = { FORMAL: '正式', MOCK: '模拟', PRACTICE: '练习' }
-  return map[type] || type
-}
-
-const getPaperTypeColor = (type) => {
-  const map = { FORMAL: 'danger', MOCK: 'warning', PRACTICE: 'success' }
-  return map[type] || ''
-}
-
-const getStatusName = (status) => {
-  const map = { 0: '草稿', 1: '已发布', 2: '已归档' }
-  return map[status] || '未知'
-}
-
-const getStatusColor = (status) => {
-  const map = { 0: 'info', 1: 'success', 2: 'warning' }
-  return map[status] || 'info'
-}
-
-const getQuestionTypeName = (type) => {
-  const map = {
-    SINGLE_CHOICE: '单选',
-    MULTIPLE_CHOICE: '多选',
-    TRUE_FALSE: '判断',
-    FILL_BLANK: '填空',
-    SHORT_ANSWER: '简答'
-  }
-  return map[type] || type
-}
 
 // 初始化
 onMounted(() => {

@@ -66,6 +66,16 @@ export default {
       url: `/api/question-bank/${id}`,
       method: 'delete'
     })
+  },
+
+  /**
+   * 获取题库统计信息
+   */
+  getStatistics(id) {
+    return request({
+      url: `/api/question-bank/${id}/statistics`,
+      method: 'get'
+    })
   }
 }
 

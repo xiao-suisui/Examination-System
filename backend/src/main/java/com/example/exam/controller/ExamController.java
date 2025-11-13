@@ -34,13 +34,16 @@ public class ExamController {
     public Result<IPage<Exam>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
-            @Parameter(description = "考试状态") @RequestParam(required = false) ExamStatus status,
+            @Parameter(description = "考试状态（0-草稿,1-已发布,2-进行中,3-已结束,4-已取消）", example = "1") @RequestParam(required = false) Integer status,
             @Parameter(description = "考试标题关键词") @RequestParam(required = false) String keyword,
             @Parameter(description = "开始时间（起）") @RequestParam(required = false) LocalDateTime startTimeBegin,
             @Parameter(description = "开始时间（止）") @RequestParam(required = false) LocalDateTime startTimeEnd) {
 
+        // 手动转换枚举
+        ExamStatus statusEnum = status != null ? ExamStatus.fromCode(status) : null;
+
         Page<Exam> page = new Page<>(current, size);
-        IPage<Exam> result = examService.pageExams(page, status, keyword, startTimeBegin, startTimeEnd);
+        IPage<Exam> result = examService.pageExams(page, statusEnum, keyword, startTimeBegin, startTimeEnd);
         return Result.success(result);
     }
 
@@ -102,20 +105,46 @@ public class ExamController {
         return success ? Result.success() : Result.error("结束失败");
     }
 
+    @Operation(summary = "取消考试", description = "取消考试")
+    @PostMapping("/{id}/cancel")
+    public Result<Void> cancel(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
+        boolean success = examService.cancelExam(id);
+        return success ? Result.success() : Result.error("取消失败");
+    }
+
+    @Operation(summary = "复制考试", description = "复制现有考试，创建新的考试")
+    @PostMapping("/{id}/copy")
+    public Result<Long> copy(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id,
+            @Parameter(description = "新考试标题", required = true) @RequestParam String newTitle) {
+        Long newExamId = examService.copyExam(id, newTitle);
+        return newExamId != null ? Result.success("复制成功", newExamId) : Result.error("复制失败");
+    }
+
     @Operation(summary = "考试监控", description = "实时查看考试进行状态，包括参与人数、提交情况等")
     @GetMapping("/{id}/monitor")
-    public Result<Object> monitor(
+    public Result<com.example.exam.dto.ExamMonitorDTO> monitor(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
-        Object monitorData = examService.getExamMonitorData(id);
+        com.example.exam.dto.ExamMonitorDTO monitorData = examService.getExamMonitorData(id);
         return Result.success(monitorData);
     }
 
     @Operation(summary = "考试统计", description = "查看考试的统计数据，包括成绩分布、平均分等")
     @GetMapping("/{id}/statistics")
-    public Result<Object> statistics(
+    public Result<com.example.exam.dto.ExamStatisticsDTO> statistics(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
-        Object statistics = examService.getExamStatistics(id);
-        return Result.success(statistics);
+        com.example.exam.dto.ExamStatisticsDTO statistics = examService.getExamStatistics(id);
+        return statistics != null ? Result.success(statistics) : Result.error("获取统计信息失败");
+    }
+
+    @Operation(summary = "查询考生的考试列表", description = "根据考生ID查询其可参与的考试列表")
+    @GetMapping("/user/{userId}")
+    public Result<java.util.List<Exam>> getUserExams(
+            @Parameter(description = "考生ID", required = true) @PathVariable Long userId,
+            @Parameter(description = "组织ID") @RequestParam(required = false) Long orgId) {
+        java.util.List<Exam> exams = examService.getExamsByUser(userId, orgId);
+        return Result.success(exams);
     }
 }
 

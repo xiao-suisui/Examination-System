@@ -1,1 +1,8 @@
-import dayjs from 'dayjs'; export function formatDate(date, format = 'YYYY-MM-DD HH:mm:ss') { if (!date) return ''; return dayjs(date).format(format); } export default { formatDate };
+import dayjs from 'dayjs';
+
+export function formatDate(date, format = 'YYYY-MM-DD HH:mm:ss') {
+    if (!date) return '';
+    return dayjs(date).format(format);
+}
+
+export default {formatDate};

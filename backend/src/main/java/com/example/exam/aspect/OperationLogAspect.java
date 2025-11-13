@@ -67,10 +67,13 @@ public class OperationLogAspect {
         log.setIpAddress(request != null ? getClientIp(request) : "");
 
         // 获取当前用户ID
+        Long userId = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Long) {
-            log.setUserId((Long) authentication.getPrincipal());
+            userId = (Long) authentication.getPrincipal();
         }
+        // 对于未登录操作（如注册），设置userId为0
+        log.setUserId(userId != null ? userId : 0L);
 
         // 记录请求参数（存储在deviceInfo字段，因为原表没有请求参数字段）
         if (operationLog.recordParams()) {
@@ -112,9 +115,16 @@ public class OperationLogAspect {
             // 设置操作时间（自动填充）
             log.setOperateTime(LocalDateTime.now());
 
-            // 记录执行时间到设备信息
+            // 记录执行时间到设备信息（确保不超过500字符）
             String deviceInfo = log.getDeviceInfo() != null ? log.getDeviceInfo() : "";
-            log.setDeviceInfo(deviceInfo + " | 耗时: " + executionTime + "ms");
+            String timeInfo = " | 耗时: " + executionTime + "ms";
+            String finalDeviceInfo = deviceInfo + timeInfo;
+
+            // 截断到500字符以内
+            if (finalDeviceInfo.length() > 500) {
+                finalDeviceInfo = finalDeviceInfo.substring(0, 497) + "...";
+            }
+            log.setDeviceInfo(finalDeviceInfo);
 
             // 异步保存日志
             saveLogAsync(log);

@@ -410,7 +410,20 @@ INSERT INTO paper (paper_name, description, paper_type, pass_score, total_score,
 
 
 -- ========================================
--- 8. 试卷-题目关联数据
+-- 8. 试卷组卷规则数据（仅用于智能组卷的试卷）
+-- ========================================
+-- 试卷3：Spring框架快速测试（智能组卷，paper_type=2）
+DELETE FROM paper_rule WHERE paper_id IN (3);
+
+INSERT INTO paper_rule (paper_id, bank_id, question_type, total_num, easy_num, medium_num, hard_num, single_score, knowledge_ids, sort_order, create_time) VALUES
+-- 试卷3的组卷规则（Spring框架快速测试）
+(3, 3, 1, 15, 6, 6, 3, 2.50, NULL, 1, NOW()),  -- 单选题：15道（简单6、中等6、困难3），每题2.5分
+(3, 3, 2, 10, 3, 5, 2, 4.00, NULL, 2, NOW()),  -- 多选题：10道（简单3、中等5、困难2），每题4分
+(3, 3, 4, 5, 3, 2, 0, 2.00, NULL, 3, NOW());   -- 判断题：5道（简单3、中等2），每题2分
+-- 总分：15*2.5 + 10*4 + 5*2 = 37.5 + 40 + 10 = 87.5分
+
+-- ========================================
+-- 9. 试卷-题目关联数据
 -- ========================================
 -- 注意：paper_question表的主键是id，不是relation_id
 

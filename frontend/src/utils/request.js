@@ -36,7 +36,7 @@ service.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+      ElMessage.error(res.msg || res.message || '请求失败')
 
       if (res.code === 401) {
         ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
@@ -49,7 +49,7 @@ service.interceptors.response.use(
         })
       }
 
-      return Promise.reject(new Error(res.message || '请求失败'))
+      return Promise.reject(new Error(res.msg || res.message || '请求失败'))
     }
 
     return res
@@ -61,29 +61,36 @@ service.interceptors.response.use(
 
     if (error.response) {
       const status = error.response.status
-      switch (status) {
-        case 400:
-          message = '请求参数错误'
-          break
-        case 401:
-          message = '未授权，请登录'
-          removeToken()
-          router.push('/login')
-          break
-        case 403:
-          message = '拒绝访问，权限不足'
-          break
-        case 404:
-          message = '请求资源不存在'
-          break
-        case 500:
-          message = '服务器内部错误'
-          break
-        case 503:
-          message = '服务不可用'
-          break
-        default:
-          message = error.response.data?.message || `错误代码: ${status}`
+      const data = error.response.data
+
+      // 优先使用后端返回的错误信息
+      if (data && (data.msg || data.message)) {
+        message = data.msg || data.message
+      } else {
+        switch (status) {
+          case 400:
+            message = '请求参数错误'
+            break
+          case 401:
+            message = '未授权，请登录'
+            removeToken()
+            router.push('/login')
+            break
+          case 403:
+            message = '拒绝访问，权限不足'
+            break
+          case 404:
+            message = '请求资源不存在'
+            break
+          case 500:
+            message = '服务器内部错误'
+            break
+          case 503:
+            message = '服务不可用'
+            break
+          default:
+            message = `错误代码: ${status}`
+        }
       }
     } else if (error.code === 'ECONNABORTED') {
       message = '请求超时，请检查网络'

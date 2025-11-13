@@ -58,6 +58,8 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     cache-enabled: false
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 默认枚举处理器：使用注解 @EnumValue 的字段值作为数据库存储值
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     db-config:
       id-type: auto
@@ -70,14 +72,11 @@ logging:
   level:
     root: INFO
     com.example.exam: DEBUG
-    com.example.exam.mapper: DEBUG
     org.springframework.web: INFO
     org.springframework.security: DEBUG
-    org.mybatis: DEBUG
-    com.baomidou.mybatisplus: DEBUG
+    com.baomidou.mybatis.plus: DEBUG
   pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n'
-
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{50} - %msg%n [%file:%line] '
 # JWT配置
 jwt:
   secret: exam-system-secret-key-for-jwt-token-generation-2025-very-long-secret
@@ -111,17 +110,6 @@ knife4j:
     enable-host: false
     enable-home-custom: true
     home-custom-path: classpath:markdown/home.md
-  openapi:
-    title: 在线考试系统API文档
-    description: 考试系统后端接口文档
-    version: 2.0
-    concat: Exam System Team
-    group:
-      exam:
-        group-name: 考试管理
-        api-rule: package
-        api-rule-resources:
-          - com.example.exam.controller
 
 # SpringDoc配置
 springdoc:

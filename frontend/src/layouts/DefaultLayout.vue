@@ -16,26 +16,43 @@
             <span>首页</span>
           </el-menu-item>
 
-          <el-menu-item index="/admin/question-bank">
-            <el-icon><Collection /></el-icon>
-            <span>题库管理</span>
-          </el-menu-item>
+          <!-- 系统管理 -->
+          <el-sub-menu index="/system">
+            <template #title>
+              <el-icon><Setting /></el-icon>
+              <span>系统管理</span>
+            </template>
+            <el-menu-item index="/admin/user">
+              <el-icon><User /></el-icon>
+              <span>用户管理</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/organization">
+              <el-icon><OfficeBuilding /></el-icon>
+              <span>组织管理</span>
+            </el-menu-item>
+          </el-sub-menu>
 
-          <el-menu-item index="/admin/question">
-            <el-icon><EditPen /></el-icon>
-            <span>题目管理</span>
-          </el-menu-item>
+          <!-- 题库管理 -->
+          <el-sub-menu index="/question-bank">
+            <template #title>
+              <el-icon><Collection /></el-icon>
+              <span>题库管理</span>
+            </template>
+            <el-menu-item index="/admin/question-bank">
+              <span>题库列表</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/question">
+              <span>题目管理</span>
+            </el-menu-item>
+          </el-sub-menu>
 
+          <!-- 试卷管理 -->
           <el-menu-item index="/admin/paper">
             <el-icon><Document /></el-icon>
             <span>试卷管理</span>
           </el-menu-item>
 
-          <el-menu-item index="/knowledge-point">
-            <el-icon><Share /></el-icon>
-            <span>知识点</span>
-          </el-menu-item>
-
+          <!-- 考试管理 -->
           <el-sub-menu index="/exam">
             <template #title>
               <el-icon><Files /></el-icon>
@@ -88,6 +105,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/modules/auth'
 import { useAppStore } from '@/stores/modules/app'
 import { ElMessageBox } from 'element-plus'
+import {
+  HomeFilled,
+  Setting,
+  User,
+  OfficeBuilding,
+  Collection,
+  EditPen,
+  Document,
+  Files,
+  Share,
+  Fold,
+  Expand
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()

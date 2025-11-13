@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * 试卷表Mapper接口
- *
  * 模块：试卷管理模块（exam-paper）
  * 职责：试卷数据访问
  *
@@ -27,7 +26,7 @@ public interface PaperMapper extends BaseMapper<Paper> {
      * @param creatorId 创建者ID
      * @return 试卷列表
      */
-    @Select("SELECT * FROM paper WHERE creator_id = #{creatorId} AND deleted = 0 ORDER BY create_time DESC")
+    @Select("SELECT * FROM paper WHERE create_user_id = #{creatorId} AND deleted = 0 ORDER BY create_time DESC")
     List<Paper> selectByCreatorId(@Param("creatorId") Long creatorId);
 
     /**
@@ -38,5 +37,14 @@ public interface PaperMapper extends BaseMapper<Paper> {
      */
     @Select("SELECT COUNT(*) FROM exam WHERE paper_id = #{paperId} AND deleted = 0")
     int countUsageByPaperId(@Param("paperId") Long paperId);
+
+    /**
+     * 根据题库ID查询题库名称
+     *
+     * @param bankId 题库ID
+     * @return 题库名称
+     */
+    @Select("SELECT bank_name FROM question_bank WHERE bank_id = #{bankId} AND deleted = 0")
+    String selectBankNameById(@Param("bankId") Long bankId);
 }
 

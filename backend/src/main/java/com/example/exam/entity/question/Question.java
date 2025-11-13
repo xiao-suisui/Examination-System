@@ -2,11 +2,12 @@ package com.example.exam.entity.question;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.example.exam.common.enums.AuditStatus;
-import com.example.exam.common.enums.DifficultyLevel;
+import com.example.exam.common.enums.DifficultyType;
 import com.example.exam.common.enums.QuestionType;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,7 +15,6 @@ import java.util.List;
 
 /**
  * 题目表实体类（核心）
- *
  * 模块：题库管理模块（exam-question）
  * 职责：管理题目（支持8种题型）
  * 表名：question
@@ -32,6 +32,7 @@ import java.util.List;
 @TableName("question")
 public class Question implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -76,7 +77,7 @@ public class Question implements Serializable {
      * 难度：EASY-简单，MEDIUM-中等，HARD-困难
      */
     @TableField("difficulty")
-    private DifficultyLevel difficulty;
+    private DifficultyType difficulty;
 
     /**
      * 知识点ID列表（逗号分隔，最多3个）
@@ -186,5 +187,6 @@ public class Question implements Serializable {
      */
     @TableField(exist = false)
     private List<QuestionOption> options;
+
 }
 

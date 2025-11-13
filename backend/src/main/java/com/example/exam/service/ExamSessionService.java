@@ -64,5 +64,20 @@ public interface ExamSessionService extends IService<ExamSession> {
      * 标记题目
      */
     boolean markQuestion(Long sessionId, Long questionId, String markType);
+
+    /**
+     * 记录切屏
+     *
+     * @param sessionId 会话ID
+     * @return 当前切屏次数
+     */
+    int recordTabSwitch(String sessionId);
+
+    /**
+     * 更新心跳（保持在线）
+     *
+     * @param sessionId 会话ID
+     */
+    void updateHeartbeat(String sessionId);
 }
 

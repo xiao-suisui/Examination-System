@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.exam.common.enums.AuditStatus;
+import com.example.exam.common.enums.PaperType;
 import com.example.exam.entity.paper.Paper;
 import com.example.exam.entity.paper.PaperQuestion;
 import com.example.exam.entity.paper.PaperRule;
@@ -20,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 试卷Service实现类
@@ -34,17 +35,97 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements PaperService {
 
+    private final PaperMapper paperMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionMapper questionMapper;
+    private final com.example.exam.mapper.paper.PaperRuleMapper paperRuleMapper;
+    private final com.example.exam.mapper.exam.ExamMapper examMapper;
 
     @Override
-    public IPage<Paper> pagePapers(Page<Paper> page, String keyword, Integer paperType, Long createUserId) {
+    public IPage<Paper> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, AuditStatus auditStatus) {
         LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(keyword != null && !keyword.isEmpty(), Paper::getPaperName, keyword)
                .eq(paperType != null, Paper::getPaperType, paperType)
-               .eq(createUserId != null, Paper::getCreateUserId, createUserId)
+               .eq(auditStatus != null, Paper::getAuditStatus, auditStatus)
                .orderByDesc(Paper::getCreateTime);
-        return this.page(page, wrapper);
+
+        IPage<Paper> result = this.page(page, wrapper);
+
+        // 填充每个试卷的扩展信息
+        result.getRecords().forEach(paper -> enrichPaperInfo(paper, bankId));
+
+        return result;
+    }
+
+    /**
+     * 填充试卷的扩展信息（题目数量、题库名称、状态）
+     *
+     * @param paper 试卷对象
+     * @param filterBankId 过滤的题库ID（如果不为null，只返回该题库的试卷）
+     */
+    private void enrichPaperInfo(Paper paper, Long filterBankId) {
+        try {
+            Long paperBankId = null;
+            int questionCount = 0;
+
+            // 1. 优先从PaperRule表查询（自动组卷/随机组卷）
+            LambdaQueryWrapper<PaperRule> ruleWrapper = new LambdaQueryWrapper<>();
+            ruleWrapper.eq(PaperRule::getPaperId, paper.getPaperId());
+            List<PaperRule> rules = paperRuleMapper.selectList(ruleWrapper);
+
+            if (rules != null && !rules.isEmpty()) {
+                // 获取第一个规则的题库ID
+                paperBankId = rules.get(0).getBankId();
+                // 累加所有规则的题目数量
+                questionCount = rules.stream()
+                    .mapToInt(rule -> rule.getTotalNum() != null ? rule.getTotalNum() : 0)
+                    .sum();
+            }
+
+            // 2. 如果没有规则，从PaperQuestion表查询（手动组卷）
+            if (questionCount == 0) {
+                LambdaQueryWrapper<PaperQuestion> pqWrapper = new LambdaQueryWrapper<>();
+                pqWrapper.eq(PaperQuestion::getPaperId, paper.getPaperId());
+                Long count = paperQuestionMapper.selectCount(pqWrapper);
+                questionCount = count != null ? count.intValue() : 0;
+
+                // 查询题库ID（从第一道题目获取）
+                if (questionCount > 0) {
+                    pqWrapper.last("LIMIT 1");
+                    PaperQuestion pq = paperQuestionMapper.selectOne(pqWrapper);
+                    if (pq != null) {
+                        Question question = questionMapper.selectById(pq.getQuestionId());
+                        if (question != null) {
+                            paperBankId = question.getBankId();
+                        }
+                    }
+                }
+            }
+
+            // 如果指定了过滤题库ID，且当前试卷不属于该题库，跳过
+            if (filterBankId != null && paperBankId != null && !filterBankId.equals(paperBankId)) {
+                return;
+            }
+
+            // 3. 设置题目数量
+            paper.setQuestionCount(questionCount);
+
+            // 4. 查询并设置题库名称
+            if (paperBankId != null) {
+                String bankName = paperMapper.selectBankNameById(paperBankId);
+                paper.setBankName(bankName != null ? bankName : "");
+                paper.setBankId(paperBankId);
+            } else {
+                paper.setBankName("");
+                paper.setBankId(null);
+            }
+
+        } catch (Exception e) {
+            log.warn("填充试卷信息失败，paperId: {}", paper.getPaperId(), e);
+            // 设置默认值，避免前端显示异常
+            paper.setQuestionCount(0);
+            paper.setBankName("");
+        }
     }
 
     @Override
@@ -71,7 +152,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     public Long autoGeneratePaper(Paper paper, PaperRule[] rules) {
         try {
             // 1. 保存试卷基本信息
-            paper.setPaperType(2); // 2-随机组卷
+            paper.setPaperType(PaperType.AUTO); // 自动组卷
             if (!this.save(paper)) {
                 log.error("保存试卷失败");
                 return null;
@@ -235,7 +316,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
             newPaper.setTotalScore(originalPaper.getTotalScore());
             newPaper.setCreateUserId(originalPaper.getCreateUserId());
             newPaper.setOrgId(originalPaper.getOrgId());
-            newPaper.setAuditStatus(0); // 新试卷默认为草稿状态
+            newPaper.setAuditStatus(AuditStatus.DRAFT); // 新试卷默认为草稿状态
             newPaper.setPublishStatus(0); // 默认未发布
 
             if (!this.save(newPaper)) {
@@ -267,6 +348,113 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         } catch (Exception e) {
             log.error("复制试卷失败", e);
             throw new RuntimeException("复制试卷失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public com.example.exam.dto.PaperStatisticsDTO getPaperStatistics(Long paperId) {
+        try {
+            // 获取试卷基本信息
+            Paper paper = this.getById(paperId);
+            if (paper == null) {
+                return null;
+            }
+
+            // 获取试卷中的所有题目
+            LambdaQueryWrapper<PaperQuestion> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PaperQuestion::getPaperId, paperId);
+            List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(wrapper);
+
+            if (paperQuestions.isEmpty()) {
+                // 如果没有题目，返回基本统计
+                return com.example.exam.dto.PaperStatisticsDTO.builder()
+                        .paperId(paperId)
+                        .paperName(paper.getPaperName())
+                        .totalQuestions(0)
+                        .singleChoiceCount(0)
+                        .multipleChoiceCount(0)
+                        .trueFalseCount(0)
+                        .fillBlankCount(0)
+                        .shortAnswerCount(0)
+                        .otherCount(0)
+                        .easyCount(0)
+                        .mediumCount(0)
+                        .hardCount(0)
+                        .totalScore(paper.getTotalScore())
+                        .passScore(paper.getPassScore())
+                        .duration(null)  // paper表没有duration字段，时长在exam表中
+                        .usageCount(0)
+                        .build();
+            }
+
+            // 获取题目ID列表
+            List<Long> questionIds = paperQuestions.stream()
+                    .map(PaperQuestion::getQuestionId)
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 查询题目详情
+            LambdaQueryWrapper<com.example.exam.entity.question.Question> questionWrapper =
+                new LambdaQueryWrapper<>();
+            questionWrapper.in(com.example.exam.entity.question.Question::getQuestionId, questionIds);
+            List<com.example.exam.entity.question.Question> questions =
+                questionMapper.selectList(questionWrapper);
+
+            // 统计各类型题目数量
+            int singleChoiceCount = 0, multipleChoiceCount = 0, trueFalseCount = 0;
+            int fillBlankCount = 0, shortAnswerCount = 0, otherCount = 0;
+            int easyCount = 0, mediumCount = 0, hardCount = 0;
+
+            for (com.example.exam.entity.question.Question q : questions) {
+                // 统计题型
+                if (q.getQuestionType() != null) {
+                    switch (q.getQuestionType().getCode()) {
+                        case 1: singleChoiceCount++; break;
+                        case 2: multipleChoiceCount++; break;
+                        case 4: trueFalseCount++; break;
+                        case 6: fillBlankCount++; break;
+                        case 7: shortAnswerCount++; break;
+                        default: otherCount++; break;
+                    }
+                }
+
+                // 统计难度
+                if (q.getDifficulty() != null) {
+                    switch (q.getDifficulty().getType()) {
+                        case 1: easyCount++; break;
+                        case 2: mediumCount++; break;
+                        case 3: hardCount++; break;
+                    }
+                }
+            }
+
+            // 统计使用次数（被多少场考试使用）
+            LambdaQueryWrapper<com.example.exam.entity.exam.Exam> examWrapper =
+                new LambdaQueryWrapper<>();
+            examWrapper.eq(com.example.exam.entity.exam.Exam::getPaperId, paperId);
+            long usageCount = examMapper.selectCount(examWrapper);
+
+            return com.example.exam.dto.PaperStatisticsDTO.builder()
+                    .paperId(paperId)
+                    .paperName(paper.getPaperName())
+                    .totalQuestions(questions.size())
+                    .singleChoiceCount(singleChoiceCount)
+                    .multipleChoiceCount(multipleChoiceCount)
+                    .trueFalseCount(trueFalseCount)
+                    .fillBlankCount(fillBlankCount)
+                    .shortAnswerCount(shortAnswerCount)
+                    .otherCount(otherCount)
+                    .easyCount(easyCount)
+                    .mediumCount(mediumCount)
+                    .hardCount(hardCount)
+                    .totalScore(paper.getTotalScore())
+                    .passScore(paper.getPassScore())
+                    .duration(null)  // paper表没有duration字段，时长在exam表中设置
+                    .usageCount((int) usageCount)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("获取试卷统计信息失败", e);
+            return null;
         }
     }
 }

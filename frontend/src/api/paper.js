@@ -87,6 +87,26 @@ export default {
       url: `/api/paper/${id}/archive`,
       method: 'post'
     })
+  },
+
+  /**
+   * 获取试卷统计信息
+   */
+  getStatistics(id) {
+    return request({
+      url: `/api/paper/${id}/statistics`,
+      method: 'get'
+    })
+  },
+
+  /**
+   * 预览试卷
+   */
+  preview(id) {
+    return request({
+      url: `/api/paper/${id}/preview`,
+      method: 'get'
+    })
   }
 }
 

@@ -7,13 +7,12 @@ import lombok.Getter;
 
 /**
  * 考试会话状态枚举
- *
  * 模块：公共模块（exam-common）
  * 职责：定义考试会话的各个状态
  *
  * @author Exam System
  * @version 2.0
- * @since 2025-11-06
+ * @since 2025-11-07
  */
 @Getter
 @AllArgsConstructor
@@ -22,39 +21,39 @@ public enum ExamSessionStatus {
     /**
      * 进行中：考试正在进行
      */
-    IN_PROGRESS("IN_PROGRESS", "进行中"),
+    IN_PROGRESS(1, "进行中"),
 
     /**
      * 已提交：考生已提交试卷
      */
-    SUBMITTED("SUBMITTED", "已提交"),
+    SUBMITTED(2, "已提交"),
 
     /**
      * 已批改：试卷已批改完成
      */
-    GRADED("GRADED", "已批改"),
+    GRADED(3, "已批改"),
 
     /**
      * 已终止：考试被强制终止
      */
-    TERMINATED("TERMINATED", "已终止"),
+    TERMINATED(4, "已终止"),
 
     /**
      * 超时提交：考试时间到自动提交
      */
-    TIMEOUT_SUBMITTED("TIMEOUT_SUBMITTED", "超时提交"),
+    TIMEOUT_SUBMITTED(5, "超时提交"),
 
     /**
      * 异常终止：因违规等原因异常终止
      */
-    ABNORMAL_TERMINATED("ABNORMAL_TERMINATED", "异常终止");
+    ABNORMAL_TERMINATED(6, "异常终止");
 
     /**
-     * 状态编码（数据库存储值）
+     * 状态编码（数据库存储值 - TINYINT）
      */
     @EnumValue
     @JsonValue
-    private final String code;
+    private final int code;
 
     /**
      * 状态名称（中文显示）
@@ -67,9 +66,9 @@ public enum ExamSessionStatus {
      * @param code 状态编码
      * @return 状态枚举，未找到则返回null
      */
-    public static ExamSessionStatus fromCode(String code) {
+    public static ExamSessionStatus fromCode(int code) {
         for (ExamSessionStatus status : values()) {
-            if (status.getCode().equals(code)) {
+            if (status.getCode() == code) {
                 return status;
             }
         }

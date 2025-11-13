@@ -108,11 +108,21 @@ const handleRegister = async () => {
 
     loading.value = true
     try {
-      await userApi.register(registerForm)
-      ElMessage.success('注册成功，请登录')
-      router.push('/login')
+      const res = await userApi.register(registerForm)
+      if (res.code === 200) {
+        ElMessage.success('注册成功，请登录')
+        router.push('/login')
+      } else {
+        ElMessage.error(res.message || '注册失败')
+      }
     } catch (error) {
       console.error('注册失败:', error)
+      // 显示详细错误信息
+      if (error.response && error.response.data && error.response.data.message) {
+        ElMessage.error(error.response.data.message)
+      } else {
+        ElMessage.error('注册失败，请稍后重试')
+      }
     } finally {
       loading.value = false
     }

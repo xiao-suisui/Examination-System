@@ -1,19 +1,16 @@
 package com.example.exam.entity.exam;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import com.example.exam.common.enums.ExamStatus;
+import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * 考试表实体类
- *
  * 模块：考试管理模块（exam-exam）
  * 职责：管理考试（发布、配置、防作弊）
  * 表名：exam
@@ -31,6 +28,7 @@ import java.time.LocalDateTime;
 @TableName("exam")
 public class Exam implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -94,10 +92,10 @@ public class Exam implements Serializable {
     private String examRangeIds;
 
     /**
-     * 考试状态：0-未开始，1-进行中，2-已结束，3-已终止
+     * 考试状态：0-草稿，1-已发布，2-进行中，3-已结束，4-已取消
      */
     @TableField("exam_status")
-    private Integer examStatus;
+    private ExamStatus examStatus;
 
     /**
      * 允许切屏次数（0-5）

@@ -23,12 +23,12 @@
         <el-form-item label="题库类型">
           <el-select
             v-model="searchForm.bankType"
-            placeholder="全部"
+            placeholder="选择类型"
             clearable
-            @clear="handleSearch"
+            style="width: 120px"
           >
-            <el-option label="公共题库" value="PUBLIC" />
-            <el-option label="私有题库" value="PRIVATE" />
+            <el-option label="公共题库" :value="BANK_TYPE.PUBLIC" />
+            <el-option label="私有题库" :value="BANK_TYPE.PRIVATE" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -51,16 +51,10 @@
         <el-table-column prop="description" label="描述" min-width="300" show-overflow-tooltip />
         <el-table-column prop="bankType" label="类型" width="120">
           <template #default="{ row }">
-            <el-tag :type="getBankTypeColor(row.bankType)">
+            <el-tag :type="getBankTypeColor(row.bankType)" v-if="row.bankType">
               {{ getBankTypeName(row.bankType) }}
             </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="bankType" label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.bankType === 'PUBLIC' ? 'success' : 'info'">
-              {{ row.bankType === 'PUBLIC' ? '公共' : '私有' }}
-            </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="questionCount" label="题目数" width="100" align="center" />
@@ -105,18 +99,10 @@
           <el-input v-model="formData.bankName" placeholder="请输入题库名称" />
         </el-form-item>
         <el-form-item label="题库类型" prop="bankType">
-          <el-select v-model="formData.bankType" placeholder="请选择题库类型" style="width: 100%">
-            <el-option label="通用题库" value="GENERAL" />
-            <el-option label="专业题库" value="PROFESSIONAL" />
-            <el-option label="模拟题库" value="SIMULATION" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="题库类型" prop="bankType">
           <el-radio-group v-model="formData.bankType">
-            <el-radio value="PUBLIC">公共题库</el-radio>
-            <el-radio value="PRIVATE">私有题库</el-radio>
+            <el-radio :value="BANK_TYPE.PUBLIC">公共题库</el-radio>
+            <el-radio :value="BANK_TYPE.PRIVATE">私有题库</el-radio>
           </el-radio-group>
-          <span class="form-tip">公共题库所有用户可见，私有题库仅创建者可见</span>
         </el-form-item>
         <el-form-item label="题库描述" prop="description">
           <el-input
@@ -151,6 +137,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import questionBankApi from '@/api/questionBank'
+import {
+  BANK_TYPE,
+  getBankTypeName,
+  getBankTypeColor
+} from '@/utils/enums'
 
 const router = useRouter()
 
@@ -181,7 +172,7 @@ const formRef = ref(null)
 const formData = reactive({
   bankId: null,
   bankName: '',
-  bankType: 'PUBLIC',
+  bankType: BANK_TYPE.PUBLIC,
   description: '',
   sort: 0
 })
@@ -316,31 +307,12 @@ const handleSubmit = async () => {
 const resetForm = () => {
   formData.bankId = null
   formData.bankName = ''
-  formData.bankType = 'PUBLIC'
+  formData.bankType = BANK_TYPE.PUBLIC
   formData.description = ''
   formData.sort = 0
   formRef.value?.resetFields()
 }
 
-// 获取题库类型名称
-const getBankTypeName = (type) => {
-  const map = {
-    GENERAL: '通用',
-    PROFESSIONAL: '专业',
-    SIMULATION: '模拟'
-  }
-  return map[type] || type
-}
-
-// 获取题库类型颜色
-const getBankTypeColor = (type) => {
-  const map = {
-    GENERAL: 'primary',
-    PROFESSIONAL: 'success',
-    SIMULATION: 'warning'
-  }
-  return map[type] || ''
-}
 
 // 初始化
 onMounted(() => {
@@ -387,4 +359,3 @@ onMounted(() => {
   font-size: 12px;
 }
 </style>
-

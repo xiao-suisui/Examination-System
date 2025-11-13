@@ -375,7 +375,7 @@ CREATE TABLE `paper_rule` (
   `rule_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '规则ID',
   `paper_id` BIGINT NOT NULL COMMENT '试卷ID',
   `bank_id` BIGINT DEFAULT NULL COMMENT '题库ID（从哪个题库抽题）',
-  `question_type` VARCHAR(50) NOT NULL COMMENT '题型',
+  `question_type` TINYINT NOT NULL COMMENT '题型：1-单选，2-多选，4-判断，6-填空，7-简答',
   `total_num` INT NOT NULL COMMENT '该题型总题量',
   `easy_num` INT DEFAULT 0 COMMENT '简单题数量',
   `medium_num` INT DEFAULT 0 COMMENT '中等题数量',

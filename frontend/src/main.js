@@ -33,6 +33,24 @@ app.use(ElementPlus, {
   size: 'default'
 })
 
+// 全局错误处理
+app.config.errorHandler = (err, instance, info) => {
+  console.error('全局错误捕获:', err)
+  console.error('错误信息:', info)
+  console.error('组件实例:', instance)
+
+  // 可以在这里发送错误到日志服务器
+  // 或显示友好的错误提示
+}
+
+// 全局警告处理（开发环境）
+if (import.meta.env.DEV) {
+  app.config.warnHandler = (msg, instance, trace) => {
+    console.warn('Vue警告:', msg)
+    console.warn('组件追踪:', trace)
+  }
+}
+
 // 挂载应用
 app.mount('#app')
 

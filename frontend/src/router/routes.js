@@ -103,34 +103,49 @@ export default [
           hidden: true
         }
       },
-
       {
-        path: 'question-bank',
+        path: 'paper/preview/:id',
+        name: 'PaperPreview',
+        component: () => import('@/views/admin/Paper/Preview.vue'),
         meta: {
-          title: '题库管理',
-          icon: 'Collection'
-        },
-        children: [
-          {
-            path: 'list',
-            name: 'QuestionBankList',
-            component: () => import('@/views/QuestionBank/BankList.vue'),
-            meta: {
-              title: '题库列表',
-              permission: 'question_bank:view'
-            }
-          },
-          {
-            path: 'detail/:id',
-            name: 'QuestionBankDetail',
-            component: () => import('@/views/QuestionBank/BankDetail.vue'),
-            meta: {
-              title: '题库详情',
-              permission: 'question_bank:view',
-              hidden: true
-            }
-          }
-        ]
+          title: '试卷预览',
+          hidden: true
+        }
+      },
+
+
+      // ==================== 用户管理 ====================
+      {
+        path: 'admin/user',
+        name: 'UserManage',
+        component: () => import('@/views/admin/User/Index.vue'),
+        meta: {
+          title: '用户管理',
+          icon: 'User'
+        }
+      },
+
+      // ==================== 组织管理 ====================
+      {
+        path: 'admin/organization',
+        name: 'OrganizationManage',
+        component: () => import('@/views/admin/Organization/Index.vue'),
+        meta: {
+          title: '组织管理',
+          icon: 'OfficeBuilding'
+        }
+      },
+
+      // ==================== 个人中心 ====================
+      {
+        path: 'user/profile',
+        name: 'UserProfile',
+        component: () => import('@/views/User/Profile.vue'),
+        meta: {
+          title: '个人资料',
+          icon: 'User',
+          hidden: true
+        }
       },
 
       // ==================== 题目管理 ====================

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.exam.common.enums.AuditStatus;
-import com.example.exam.common.enums.DifficultyLevel;
+import com.example.exam.common.enums.DifficultyType;
 import com.example.exam.common.enums.QuestionType;
 import com.example.exam.entity.question.Question;
 import org.apache.ibatis.annotations.Mapper;
@@ -40,7 +40,7 @@ public interface QuestionMapper extends BaseMapper<Question> {
     IPage<Question> selectQuestionPage(Page<Question> page,
                                         @Param("bankId") Long bankId,
                                         @Param("questionType") QuestionType questionType,
-                                        @Param("difficulty") DifficultyLevel difficulty,
+                                        @Param("difficulty") DifficultyType difficulty,
                                         @Param("auditStatus") AuditStatus auditStatus,
                                         @Param("knowledgeId") Long knowledgeId,
                                         @Param("keyword") String keyword);
@@ -58,7 +58,7 @@ public interface QuestionMapper extends BaseMapper<Question> {
      */
     List<Question> selectRandomQuestions(@Param("bankId") Long bankId,
                                           @Param("questionType") QuestionType questionType,
-                                          @Param("difficulty") DifficultyLevel difficulty,
+                                          @Param("difficulty") DifficultyType difficulty,
                                           @Param("knowledgeIds") List<Long> knowledgeIds,
                                           @Param("limit") Integer limit,
                                           @Param("excludeIds") List<Long> excludeIds);
@@ -82,7 +82,7 @@ public interface QuestionMapper extends BaseMapper<Question> {
      */
     Integer countQuestionsByCondition(@Param("bankId") Long bankId,
                                        @Param("questionType") QuestionType questionType,
-                                       @Param("difficulty") DifficultyLevel difficulty,
+                                       @Param("difficulty") DifficultyType difficulty,
                                        @Param("knowledgeIds") List<Long> knowledgeIds);
 }
 

@@ -1,15 +1,18 @@
 package com.example.exam.entity.system;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.example.exam.common.enums.AuditStatus;
+import com.example.exam.common.enums.Gender;
+import com.example.exam.common.enums.UserStatus;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * 用户表实体类
- *
  * 模块：系统管理模块（exam-system）
  * 职责：管理系统用户（管理员、教师、考生）
  * 表名：sys_user
@@ -27,6 +30,7 @@ import java.time.LocalDateTime;
 @TableName("sys_user")
 public class SysUser implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -75,7 +79,7 @@ public class SysUser implements Serializable {
      * 性别：0-未知，1-男，2-女
      */
     @TableField("gender")
-    private Integer gender;
+    private Gender gender;
 
     /**
      * 组织ID
@@ -93,13 +97,13 @@ public class SysUser implements Serializable {
      * 状态：0-禁用，1-启用
      */
     @TableField("status")
-    private Integer status;
+    private UserStatus status;
 
     /**
-     * 审核状态：0-待审核，1-已通过，2-已拒绝
+     * 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
      */
     @TableField("audit_status")
-    private Integer auditStatus;
+    private AuditStatus auditStatus;
 
     /**
      * 审核备注

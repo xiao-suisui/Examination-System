@@ -1,15 +1,64 @@
 /**
- * 用户管理 API
- * @description 对应后端 UserController (/api/user/**)
+ * 用户管理API
  */
-
 import request from '@/utils/request'
 
 export default {
   /**
+   * 分页查询用户
+   */
+  page(params) {
+    return request({
+      url: '/api/user/page',
+      method: 'get',
+      params
+    })
+  },
+
+  /**
+   * 根据ID查询用户
+   */
+  getById(id) {
+    return request({
+      url: `/api/user/${id}`,
+      method: 'get'
+    })
+  },
+
+  /**
+   * 创建用户
+   */
+  create(data) {
+    return request({
+      url: '/api/user',
+      method: 'post',
+      data
+    })
+  },
+
+  /**
+   * 更新用户
+   */
+  update(id, data) {
+    return request({
+      url: `/api/user/${id}`,
+      method: 'put',
+      data
+    })
+  },
+
+  /**
+   * 删除用户
+   */
+  deleteById(id) {
+    return request({
+      url: `/api/user/${id}`,
+      method: 'delete'
+    })
+  },
+
+  /**
    * 用户注册
-   * @param {Object} data 用户信息
-   * @returns {Promise}
    */
   register(data) {
     return request({
@@ -20,70 +69,38 @@ export default {
   },
 
   /**
-   * 根据ID查询用户
-   * @param {number} id 用户ID
-   * @returns {Promise}
+   * 修改密码
    */
-  getUserById(id) {
+  changePassword(data) {
     return request({
-      url: `/api/user/${id}`,
-      method: 'get'
-    })
-  },
-
-  /**
-   * 根据用户名查询用户
-   * @param {string} username 用户名
-   * @returns {Promise}
-   */
-  getUserByUsername(username) {
-    return request({
-      url: `/api/user/username/${username}`,
-      method: 'get'
-    })
-  },
-
-  /**
-   * 更新用户信息
-   * @param {number} id 用户ID
-   * @param {Object} data 用户信息
-   * @returns {Promise}
-   */
-  updateUser(id, data) {
-    return request({
-      url: `/api/user/${id}`,
-      method: 'put',
+      url: '/api/user/change-password',
+      method: 'post',
       data
     })
   },
 
   /**
-   * 删除用户
-   * @param {number} id 用户ID
-   * @returns {Promise}
+   * 重置密码
    */
-  deleteUser(id) {
+  resetPassword(userId) {
     return request({
-      url: `/api/user/${id}`,
-      method: 'delete'
+      url: `/api/user/${userId}/reset-password`,
+      method: 'post'
     })
   },
 
   /**
-   * 获取用户资料
-   * @returns {Promise}
+   * 获取当前用户信息
    */
-  getProfile() {
+  getCurrentUser() {
     return request({
-      url: '/api/user/profile',
+      url: '/api/auth/current-user',
       method: 'get'
     })
   },
 
   /**
-   * 更新用户资料
-   * @param {Object} data 用户资料
-   * @returns {Promise}
+   * 更新当前用户资料
    */
   updateProfile(data) {
     return request({
@@ -94,15 +111,29 @@ export default {
   },
 
   /**
-   * 修改密码
-   * @param {Object} data {oldPassword, newPassword}
-   * @returns {Promise}
+   * 修改当前用户密码
    */
-  changePassword(data) {
+  updatePassword(data) {
     return request({
-      url: '/api/user/change-password',
+      url: '/api/user/update-password',
       method: 'post',
       data
+    })
+  },
+
+  /**
+   * 上传头像
+   */
+  uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+      url: '/api/user/avatar',
+      method: 'post',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
   }
 }

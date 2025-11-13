@@ -2,6 +2,7 @@ package com.example.exam.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.exam.common.enums.BankType;
 import com.example.exam.common.result.Result;
 import com.example.exam.entity.question.QuestionBank;
 import com.example.exam.service.QuestionBankService;
@@ -36,10 +37,13 @@ public class QuestionBankController {
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
             @Parameter(description = "题库名称关键词") @RequestParam(required = false) String keyword,
-            @Parameter(description = "是否公开") @RequestParam(required = false) Boolean isPublic) {
+            @Parameter(description = "题库类型（1-公共题库,2-私有题库）", example = "1") @RequestParam(required = false) Integer bankType) {
+
+        // 手动转换枚举
+        BankType bankTypeEnum = bankType != null ? BankType.fromCode(bankType) : null;
 
         Page<QuestionBank> page = new Page<>(current, size);
-        IPage<QuestionBank> result = questionBankService.pageQuestionBanks(page, keyword, isPublic);
+        IPage<QuestionBank> result = questionBankService.pageQuestionBanks(page, keyword, bankTypeEnum);
         return Result.success(result);
     }
 
@@ -87,11 +91,15 @@ public class QuestionBankController {
         return success ? Result.success() : Result.error("删除失败，题库下可能还有题目");
     }
 
-    @Operation(summary = "题库统计", description = "查询题库中的题目统计信息")
-    @GetMapping("/{id}/statistics")
-    public Result<Object> statistics(
+    @Operation(summary = "题库统计", description = "查询题库中的题目统计信息（包含题型分布、难度分布、审核状态）")
+    @com.example.exam.annotation.OperationLog(module = "题库管理", type = "查询", description = "查询题库统计信息", recordParams = false)
+    @GetMapping("/{id:[0-9]+}/statistics")
+    public Result<com.example.exam.dto.QuestionBankStatisticsDTO> statistics(
             @Parameter(description = "题库ID", required = true) @PathVariable Long id) {
-        Object statistics = questionBankService.getQuestionBankStatistics(id);
+        com.example.exam.dto.QuestionBankStatisticsDTO statistics = questionBankService.getQuestionBankStatistics(id);
+        if (statistics == null) {
+            return Result.error("题库不存在");
+        }
         return Result.success(statistics);
     }
 

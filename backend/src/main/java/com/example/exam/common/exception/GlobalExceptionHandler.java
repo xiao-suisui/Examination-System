@@ -2,6 +2,7 @@ package com.example.exam.common.exception;
 
 import com.example.exam.common.result.Result;
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -95,7 +95,16 @@ public class GlobalExceptionHandler {
         String rootMsg = e.getRootCause() != null ? e.getRootCause().getMessage() : e.getMessage();
         if (rootMsg != null) {
             if (rootMsg.contains("Duplicate entry")) {
-                message = "数据重复，请检查输入";
+                // 解析重复的字段
+                if (rootMsg.contains("uk_username") || rootMsg.contains("username")) {
+                    message = "用户名已存在";
+                } else if (rootMsg.contains("uk_phone") || rootMsg.contains("phone")) {
+                    message = "手机号已被注册";
+                } else if (rootMsg.contains("uk_email") || rootMsg.contains("email")) {
+                    message = "邮箱已被注册";
+                } else {
+                    message = "数据重复，请检查输入";
+                }
             } else if (rootMsg.contains("cannot be null") || rootMsg.contains("doesn't have a default value")) {
                 message = "必填字段不能为空";
             } else if (rootMsg.contains("foreign key constraint")) {
@@ -114,6 +123,23 @@ public class GlobalExceptionHandler {
     public Result<?> handleNullPointerException(NullPointerException e, HttpServletRequest request) {
         log.error("空指针异常 - URL: {}", request.getRequestURI(), e);
         return Result.error(500, "系统内部错误，请联系管理员");
+    }
+
+    /**
+     * 处理参数类型转换异常
+     */
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<?> handleMethodArgumentTypeMismatchException(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException e,
+            HttpServletRequest request) {
+        log.warn("参数类型转换失败：参数[{}]，值[{}]，期望类型[{}] - URL: {}",
+                e.getName(), e.getValue(),
+                e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown",
+                request.getRequestURI());
+
+        String message = String.format("参数'%s'的值'%s'格式不正确", e.getName(), e.getValue());
+        return Result.error(400, message);
     }
 
     /**

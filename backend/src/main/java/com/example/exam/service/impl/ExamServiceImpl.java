@@ -4,16 +4,28 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.exam.common.enums.ExamSessionStatus;
 import com.example.exam.common.enums.ExamStatus;
+import com.example.exam.dto.ExamDTO;
+import com.example.exam.dto.ExamMonitorDTO;
+import com.example.exam.dto.ExamStatisticsDTO;
 import com.example.exam.entity.exam.Exam;
+import com.example.exam.entity.exam.ExamSession;
+import com.example.exam.entity.paper.Paper;
 import com.example.exam.mapper.exam.ExamMapper;
+import com.example.exam.mapper.exam.ExamSessionMapper;
+import com.example.exam.mapper.paper.PaperMapper;
 import com.example.exam.service.ExamService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 考试Service实现类
@@ -22,17 +34,21 @@ import java.util.Map;
  * @version 2.0
  * @since 2025-11-06
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements ExamService {
+
+    private final ExamMapper examMapper;
+    private final ExamSessionMapper examSessionMapper;
+    private final PaperMapper paperMapper;
 
     @Override
     public IPage<Exam> pageExams(Page<Exam> page, ExamStatus status, String keyword,
                                  LocalDateTime startTimeBegin, LocalDateTime startTimeEnd) {
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-        // status参数在这里是枚举，但数据库字段是Integer，暂时注释掉
-        // wrapper.eq(status != null, Exam::getExamStatus, status)
-        wrapper.like(keyword != null && !keyword.isEmpty(), Exam::getExamName, keyword)
+        wrapper.eq(status != null, Exam::getExamStatus, status)
+               .like(keyword != null && !keyword.isEmpty(), Exam::getExamName, keyword)
                .ge(startTimeBegin != null, Exam::getStartTime, startTimeBegin)
                .le(startTimeEnd != null, Exam::getStartTime, startTimeEnd)
                .orderByDesc(Exam::getCreateTime);
@@ -40,62 +56,325 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
     }
 
     @Override
+    public IPage<ExamDTO> pageExamDTO(Page<?> page, ExamStatus status, String keyword,
+                                      LocalDateTime startTimeBegin, LocalDateTime startTimeEnd) {
+        // 先查询基础数据
+        Page<Exam> examPage = new Page<>(page.getCurrent(), page.getSize());
+        IPage<Exam> examResult = pageExams(examPage, status, keyword, startTimeBegin, startTimeEnd);
+
+        // 转换为DTO
+        List<ExamDTO> dtoList = examResult.getRecords().stream().map(exam -> {
+            ExamDTO dto = ExamDTO.builder()
+                    .examId(exam.getExamId())
+                    .examName(exam.getExamName())
+                    .description(exam.getDescription())
+                    .coverImage(exam.getCoverImage())
+                    .paperId(exam.getPaperId())
+                    .startTime(exam.getStartTime())
+                    .endTime(exam.getEndTime())
+                    .duration(exam.getDuration())
+                    .examRangeType(exam.getExamRangeType())
+                    .examRangeIds(exam.getExamRangeIds())
+                    .examStatus(exam.getExamStatus())
+                    .cutScreenLimit(exam.getCutScreenLimit())
+                    .cutScreenTimer(exam.getCutScreenTimer())
+                    .forbidCopy(exam.getForbidCopy())
+                    .singleDevice(exam.getSingleDevice())
+                    .shuffleQuestions(exam.getShuffleQuestions())
+                    .shuffleOptions(exam.getShuffleOptions())
+                    .antiPlagiarism(exam.getAntiPlagiarism())
+                    .plagiarismThreshold(exam.getPlagiarismThreshold())
+                    .remindTime(exam.getRemindTime())
+                    .showScoreImmediately(exam.getShowScoreImmediately())
+                    .orgId(exam.getOrgId())
+                    .createUserId(exam.getCreateUserId())
+                    .createTime(exam.getCreateTime())
+                    .updateTime(exam.getUpdateTime())
+                    .build();
+
+            // 查询试卷名称
+            if (exam.getPaperId() != null) {
+                Paper paper = paperMapper.selectById(exam.getPaperId());
+                if (paper != null) {
+                    dto.setPaperName(paper.getPaperName());
+                }
+            }
+
+            // 查询参与人数和已提交人数
+            LambdaQueryWrapper<ExamSession> sessionWrapper = new LambdaQueryWrapper<>();
+            sessionWrapper.eq(ExamSession::getExamId, exam.getExamId());
+            Long totalCount = examSessionMapper.selectCount(sessionWrapper);
+            dto.setParticipantCount(totalCount != null ? totalCount.intValue() : 0);
+
+            sessionWrapper.eq(ExamSession::getSessionStatus, ExamSessionStatus.SUBMITTED);
+            Long submittedCount = examSessionMapper.selectCount(sessionWrapper);
+            dto.setSubmittedCount(submittedCount != null ? submittedCount.intValue() : 0);
+
+            return dto;
+        }).collect(Collectors.toList());
+
+        // 构建返回结果
+        Page<ExamDTO> dtoPage = new Page<>(examResult.getCurrent(), examResult.getSize(), examResult.getTotal());
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean publishExam(Long examId) {
-        // TODO: 实现发布考试逻辑
         Exam exam = this.getById(examId);
         if (exam == null) {
+            log.error("考试不存在: {}", examId);
             return false;
         }
-        // 数据库中：0-未开始，1-进行中，2-已结束，3-已终止
-        // 这里假设发布后状态为0（未开始）
-        exam.setExamStatus(0);
+        // 验证试卷是否存在
+        if (exam.getPaperId() == null) {
+            log.error("考试未关联试卷: {}", examId);
+            return false;
+        }
+        Paper paper = paperMapper.selectById(exam.getPaperId());
+        if (paper == null) {
+            log.error("关联的试卷不存在: {}", exam.getPaperId());
+            return false;
+        }
+
+        // 发布考试
+        exam.setExamStatus(ExamStatus.PUBLISHED);
         return this.updateById(exam);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean startExam(Long examId) {
-        // TODO: 实现开始考试逻辑
         Exam exam = this.getById(examId);
         if (exam == null) {
             return false;
         }
         // 设置为进行中
-        exam.setExamStatus(1);
+        exam.setExamStatus(ExamStatus.IN_PROGRESS);
         return this.updateById(exam);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean endExam(Long examId) {
-        // TODO: 实现结束考试逻辑
         Exam exam = this.getById(examId);
         if (exam == null) {
             return false;
         }
         // 设置为已结束
-        exam.setExamStatus(2);
+        exam.setExamStatus(ExamStatus.ENDED);
         return this.updateById(exam);
     }
 
     @Override
-    public Object getExamMonitorData(Long examId) {
-        // TODO: 实现考试监控数据获取逻辑
-        Map<String, Object> monitorData = new HashMap<>();
-        monitorData.put("examId", examId);
-        monitorData.put("totalParticipants", 0);
-        monitorData.put("currentOnline", 0);
-        monitorData.put("submitted", 0);
-        return monitorData;
+    @Transactional(rollbackFor = Exception.class)
+    public boolean cancelExam(Long examId) {
+        Exam exam = this.getById(examId);
+        if (exam == null) {
+            return false;
+        }
+        // 设置为已取消
+        exam.setExamStatus(ExamStatus.CANCELLED);
+        return this.updateById(exam);
     }
 
     @Override
-    public Object getExamStatistics(Long examId) {
-        // TODO: 实现考试统计逻辑
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("examId", examId);
-        statistics.put("averageScore", 0.0);
-        statistics.put("highestScore", 0.0);
-        statistics.put("lowestScore", 0.0);
-        return statistics;
+    public ExamMonitorDTO getExamMonitorData(Long examId) {
+        try {
+            // 查询所有会话
+            LambdaQueryWrapper<ExamSession> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ExamSession::getExamId, examId);
+            List<ExamSession> sessions = examSessionMapper.selectList(wrapper);
+
+            int totalParticipants = sessions.size();
+            int currentOnline = 0;
+            int submitted = 0;
+            int answering = 0;
+            int cutScreenAbnormal = 0;
+
+            for (ExamSession session : sessions) {
+                if (session.getSessionStatus() == ExamSessionStatus.SUBMITTED) {
+                    submitted++;
+                } else if (session.getSessionStatus() == ExamSessionStatus.IN_PROGRESS) {
+                    answering++;
+                    currentOnline++;
+                }
+                if (session.getTabSwitchCount() != null && session.getTabSwitchCount() > 3) {
+                    cutScreenAbnormal++;
+                }
+            }
+
+            return ExamMonitorDTO.builder()
+                    .examId(examId)
+                    .totalParticipants(totalParticipants)
+                    .currentOnline(currentOnline)
+                    .submitted(submitted)
+                    .answering(answering)
+                    .cutScreenAbnormal(cutScreenAbnormal)
+                    .deviceAbnormal(0)
+                    .suspectedCheating(0)
+                    .build();
+        } catch (Exception e) {
+            log.error("获取考试监控数据失败", e);
+            return ExamMonitorDTO.builder()
+                    .examId(examId)
+                    .totalParticipants(0)
+                    .currentOnline(0)
+                    .submitted(0)
+                    .answering(0)
+                    .cutScreenAbnormal(0)
+                    .deviceAbnormal(0)
+                    .suspectedCheating(0)
+                    .build();
+        }
+    }
+
+    @Override
+    public ExamStatisticsDTO getExamStatistics(Long examId) {
+        try {
+            Exam exam = this.getById(examId);
+            if (exam == null) {
+                return null;
+            }
+
+            // 查询所有已提交的会话
+            LambdaQueryWrapper<ExamSession> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ExamSession::getExamId, examId)
+                   .eq(ExamSession::getSessionStatus, ExamSessionStatus.SUBMITTED);
+            List<ExamSession> sessions = examSessionMapper.selectList(wrapper);
+
+            int totalParticipants = sessions.size();
+            int gradedCount = 0;
+            int passCount = 0;
+            int excellentCount = 0;
+            int goodCount = 0;
+            int mediumCount = 0;
+            int fairCount = 0;
+
+            BigDecimal totalScore = BigDecimal.ZERO;
+            BigDecimal highestScore = BigDecimal.ZERO;
+            BigDecimal lowestScore = new BigDecimal("100");
+
+            // 获取试卷及格分数
+            Paper paper = exam.getPaperId() != null ? paperMapper.selectById(exam.getPaperId()) : null;
+            BigDecimal passScore = paper != null && paper.getPassScore() != null ?
+                paper.getPassScore() : new BigDecimal("60");
+
+            for (ExamSession session : sessions) {
+                if (session.getTotalScore() != null) {
+                    gradedCount++;
+                    BigDecimal score = session.getTotalScore();
+                    totalScore = totalScore.add(score);
+
+                    // 更新最高分和最低分
+                    if (score.compareTo(highestScore) > 0) {
+                        highestScore = score;
+                    }
+                    if (score.compareTo(lowestScore) < 0) {
+                        lowestScore = score;
+                    }
+
+                    // 统计分数段
+                    if (score.compareTo(passScore) >= 0) {
+                        passCount++;
+                    }
+                    if (score.compareTo(new BigDecimal("90")) >= 0) {
+                        excellentCount++;
+                    } else if (score.compareTo(new BigDecimal("80")) >= 0) {
+                        goodCount++;
+                    } else if (score.compareTo(new BigDecimal("70")) >= 0) {
+                        mediumCount++;
+                    } else if (score.compareTo(new BigDecimal("60")) >= 0) {
+                        fairCount++;
+                    }
+                }
+            }
+
+            // 计算平均分
+            BigDecimal averageScore = gradedCount > 0 ?
+                totalScore.divide(new BigDecimal(gradedCount), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
+            // 计算及格率
+            BigDecimal passRate = totalParticipants > 0 ?
+                new BigDecimal(passCount).divide(new BigDecimal(totalParticipants), 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100")) : BigDecimal.ZERO;
+
+            return ExamStatisticsDTO.builder()
+                    .examId(examId)
+                    .examName(exam.getExamName())
+                    .totalParticipants(totalParticipants)
+                    .submittedCount(totalParticipants)
+                    .notSubmittedCount(0)
+                    .gradedCount(gradedCount)
+                    .pendingGradeCount(totalParticipants - gradedCount)
+                    .averageScore(averageScore)
+                    .highestScore(highestScore)
+                    .lowestScore(lowestScore.compareTo(new BigDecimal("100")) < 0 ? lowestScore : BigDecimal.ZERO)
+                    .passCount(passCount)
+                    .failCount(gradedCount - passCount)
+                    .passRate(passRate)
+                    .excellentCount(excellentCount)
+                    .goodCount(goodCount)
+                    .mediumCount(mediumCount)
+                    .fairCount(fairCount)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("获取考试统计信息失败", e);
+            return null;
+        }
+    }
+
+    @Override
+    public List<Exam> getExamsByUser(Long userId, Long orgId) {
+        return examMapper.selectExamsByUser(userId, orgId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long copyExam(Long examId, String newTitle) {
+        try {
+            Exam originalExam = this.getById(examId);
+            if (originalExam == null) {
+                log.error("原考试不存在: {}", examId);
+                return null;
+            }
+
+            Exam newExam = Exam.builder()
+                    .examName(newTitle)
+                    .description(originalExam.getDescription())
+                    .coverImage(originalExam.getCoverImage())
+                    .paperId(originalExam.getPaperId())
+                    .duration(originalExam.getDuration())
+                    .examRangeType(originalExam.getExamRangeType())
+                    .examRangeIds(originalExam.getExamRangeIds())
+                    .examStatus(ExamStatus.DRAFT)
+                    .cutScreenLimit(originalExam.getCutScreenLimit())
+                    .cutScreenTimer(originalExam.getCutScreenTimer())
+                    .forbidCopy(originalExam.getForbidCopy())
+                    .singleDevice(originalExam.getSingleDevice())
+                    .shuffleQuestions(originalExam.getShuffleQuestions())
+                    .shuffleOptions(originalExam.getShuffleOptions())
+                    .antiPlagiarism(originalExam.getAntiPlagiarism())
+                    .plagiarismThreshold(originalExam.getPlagiarismThreshold())
+                    .remindTime(originalExam.getRemindTime())
+                    .showScoreImmediately(originalExam.getShowScoreImmediately())
+                    .orgId(originalExam.getOrgId())
+                    .createUserId(originalExam.getCreateUserId())
+                    .build();
+
+            if (this.save(newExam)) {
+                log.info("复制考试成功，原考试ID: {}, 新考试ID: {}", examId, newExam.getExamId());
+                return newExam.getExamId();
+            } else {
+                log.error("保存新考试失败");
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("复制考试失败", e);
+            throw new RuntimeException("复制考试失败: " + e.getMessage());
+        }
     }
 }
 

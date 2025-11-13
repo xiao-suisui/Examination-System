@@ -1,6 +1,7 @@
 package com.example.exam.entity.question;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.example.exam.common.enums.BankType;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -9,7 +10,6 @@ import java.time.LocalDateTime;
 
 /**
  * 题库表实体类
- *
  * 模块：题库管理模块（exam-question）
  * 职责：管理题库（公共题库、私有题库）
  * 表名：question_bank
@@ -51,7 +51,7 @@ public class QuestionBank implements Serializable {
      * 题库类型：PUBLIC-公共题库，PRIVATE-私有题库
      */
     @TableField("bank_type")
-    private String bankType;
+    private BankType bankType;
 
     /**
      * 封面图片

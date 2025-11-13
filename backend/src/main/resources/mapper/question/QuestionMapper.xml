@@ -86,9 +86,10 @@
         <result property="defaultScore" column="default_score"/>
         <result property="difficulty" column="difficulty"/>
         <result property="knowledgeIds" column="knowledge_ids"/>
-        <result property="analysis" column="analysis"/>
+        <result property="answerAnalysis" column="answer_analysis"/>
         <result property="auditStatus" column="audit_status"/>
         <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
         <collection property="options" ofType="com.example.exam.entity.question.QuestionOption">
             <id property="optionId" column="option_id"/>
             <result property="optionSeq" column="option_seq"/>

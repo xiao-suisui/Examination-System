@@ -1,11 +1,7 @@
 package com.example.exam.entity.question;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -13,7 +9,6 @@ import java.time.LocalDateTime;
 
 /**
  * 题目标签表实体类
- *
  * 模块：题库管理模块（exam-question）
  * 职责：管理题目标签（用于题目分类和检索）
  * 表名：question_tag

@@ -8,8 +8,8 @@
       </el-button>
       <div class="header-title">
         <h2>{{ bank.bankName }}</h2>
-        <el-tag :type="bank.bankType === 'PUBLIC' ? 'success' : 'info'">
-          {{ bank.bankType === 'PUBLIC' ? '公共' : '私有' }}
+        <el-tag :type="getBankTypeColor(bank.bankType)">
+          {{ getBankTypeName(bank.bankType) }}
         </el-tag>
       </div>
       <div class="header-actions">
@@ -73,10 +73,14 @@
             </el-table-column>
             <el-table-column prop="difficulty" label="难度" width="120">
               <template #default="{ row }">
-                <el-rate v-model="row.difficulty" disabled size="small" />
+                <el-rate :model-value="Number(row.difficulty) || 0" :max="3" disabled size="small" />
               </template>
             </el-table-column>
-            <el-table-column prop="score" label="分值" width="80" />
+            <el-table-column prop="defaultScore" label="分值" width="80">
+              <template #default="{ row }">
+                {{ row.defaultScore || '-' }}
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="150">
               <template #default="{ row }">
                 <el-button link type="primary" @click="viewQuestion(row.questionId)">
@@ -148,7 +152,7 @@
             </div>
           </template>
           <div class="stat-item">
-            <div class="stat-label">���单</div>
+            <div class="stat-label">简单</div>
             <div class="stat-value success">{{ statistics.easyCount || 0 }}</div>
           </div>
           <div class="stat-item">
@@ -158,6 +162,27 @@
           <div class="stat-item">
             <div class="stat-label">困难</div>
             <div class="stat-value danger">{{ statistics.hardCount || 0 }}</div>
+          </div>
+        </el-card>
+
+        <!-- 审核状态 -->
+        <el-card class="stats-card" style="margin-top: 20px">
+          <template #header>
+            <div class="card-header">
+              <span>审核状态</span>
+            </div>
+          </template>
+          <div class="stat-item">
+            <div class="stat-label">已通过</div>
+            <div class="stat-value success">{{ statistics.approvedCount || 0 }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">待审核</div>
+            <div class="stat-value warning">{{ statistics.pendingCount || 0 }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">已拒绝</div>
+            <div class="stat-value danger">{{ statistics.rejectedCount || 0 }}</div>
           </div>
         </el-card>
       </el-col>
@@ -172,6 +197,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import questionBankApi from '@/api/questionBank'
 import questionApi from '@/api/question'
+import {
+  getQuestionTypeName,
+  getQuestionTypeColor,
+  getDifficultyName,
+  getBankTypeName,
+  getBankTypeColor
+} from '@/utils/enums'
 
 const route = useRoute()
 const router = useRouter()
@@ -224,17 +256,26 @@ const loadQuestions = async () => {
 
 // 加载统计信息
 const loadStatistics = async () => {
-  // TODO: 调用统计API
-  statistics.value = {
-    totalCount: questions.value.length,
-    singleChoiceCount: 0,
-    multipleChoiceCount: 0,
-    trueFalseCount: 0,
-    fillBlankCount: 0,
-    shortAnswerCount: 0,
-    easyCount: 0,
-    mediumCount: 0,
-    hardCount: 0
+  try {
+    const res = await questionBankApi.getStatistics(route.params.id)
+    if (res.code === 200 && res.data) {
+      statistics.value = {
+        totalCount: res.data.totalQuestions || 0,
+        singleChoiceCount: res.data.singleChoiceCount || 0,
+        multipleChoiceCount: res.data.multipleChoiceCount || 0,
+        trueFalseCount: res.data.trueFalseCount || 0,
+        fillBlankCount: res.data.fillBlankCount || 0,
+        shortAnswerCount: res.data.shortAnswerCount || 0,
+        easyCount: res.data.easyCount || 0,
+        mediumCount: res.data.mediumCount || 0,
+        hardCount: res.data.hardCount || 0,
+        approvedCount: res.data.approvedCount || 0,
+        pendingCount: res.data.pendingCount || 0,
+        rejectedCount: res.data.rejectedCount || 0
+      }
+    }
+  } catch (error) {
+    console.error('加载统计信息失败', error)
   }
 }
 
@@ -296,37 +337,8 @@ const removeQuestion = async (questionId) => {
   }
 }
 
-// 辅助方法
-const getBankTypeName = (type) => {
-  const map = {
-    GENERAL: '通用',
-    SPECIAL: '专业',
-    ALGORITHM: '算法',
-    DATABASE: '数据库'
-  }
-  return map[type] || type
-}
 
-const getBankTypeColor = (type) => {
-  const map = {
-    GENERAL: 'primary',
-    SPECIAL: 'success',
-    ALGORITHM: 'warning',
-    DATABASE: 'danger'
-  }
-  return map[type] || ''
-}
 
-const getQuestionTypeName = (type) => {
-  const map = {
-    SINGLE_CHOICE: '单选',
-    MULTIPLE_CHOICE: '多选',
-    TRUE_FALSE: '判断',
-    FILL_BLANK: '填空',
-    SHORT_ANSWER: '简答'
-  }
-  return map[type] || type
-}
 
 // 初始化
 onMounted(() => {
@@ -416,4 +428,3 @@ onMounted(() => {
   color: #f56c6c;
 }
 </style>
-

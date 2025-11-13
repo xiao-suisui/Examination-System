@@ -45,11 +45,11 @@
             style="width: 120px"
             @clear="handleSearch"
           >
-            <el-option label="单选题" value="SINGLE_CHOICE" />
-            <el-option label="多选题" value="MULTIPLE_CHOICE" />
-            <el-option label="判断题" value="TRUE_FALSE" />
-            <el-option label="填空题" value="FILL_BLANK" />
-            <el-option label="简答题" value="SHORT_ANSWER" />
+            <el-option label="单选题" :value="QUESTION_TYPE.SINGLE_CHOICE" />
+            <el-option label="多选题" :value="QUESTION_TYPE.MULTIPLE_CHOICE" />
+            <el-option label="判断题" :value="QUESTION_TYPE.TRUE_FALSE" />
+            <el-option label="填空题" :value="QUESTION_TYPE.FILL_BLANK" />
+            <el-option label="简答题" :value="QUESTION_TYPE.SUBJECTIVE" />
           </el-select>
         </el-form-item>
         <el-form-item label="难度">
@@ -84,28 +84,34 @@
         <el-table-column prop="questionContent" label="题目内容" min-width="300" show-overflow-tooltip />
         <el-table-column prop="questionType" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getQuestionTypeColor(row.questionType)">
+            <el-tag :type="getQuestionTypeColor(row.questionType)" v-if="row.questionType !== undefined">
               {{ getQuestionTypeName(row.questionType) }}
             </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="difficulty" label="难度" width="100">
+        <el-table-column prop="difficulty" label="难度" width="120">
           <template #default="{ row }">
             <el-rate
-              v-model="row.difficulty"
+              :model-value="Number(row.difficulty) || 0"
+              :max="3"
               disabled
               show-score
               text-color="#ff9900"
             />
           </template>
         </el-table-column>
-        <el-table-column prop="score" label="分值" width="80" />
-        <el-table-column prop="bankName" label="所属题库" width="150" show-overflow-tooltip />
+        <el-table-column prop="defaultScore" label="分值" width="80">
+          <template #default="{ row }">
+            {{ row.defaultScore || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="auditStatus" label="审核状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getAuditStatusColor(row.auditStatus)">
+            <el-tag :type="getAuditStatusColor(row.auditStatus)" v-if="row.auditStatus !== undefined">
               {{ getAuditStatusName(row.auditStatus) }}
             </el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
@@ -158,11 +164,11 @@
 
         <el-form-item label="题目类型" prop="questionType">
           <el-select v-model="formData.questionType" placeholder="请选择题目类型" style="width: 100%">
-            <el-option label="单选题" value="SINGLE_CHOICE" />
-            <el-option label="多选题" value="MULTIPLE_CHOICE" />
-            <el-option label="判断题" value="TRUE_FALSE" />
-            <el-option label="填空题" value="FILL_BLANK" />
-            <el-option label="简答题" value="SHORT_ANSWER" />
+            <el-option label="单选题" :value="QUESTION_TYPE.SINGLE_CHOICE" />
+            <el-option label="多选题" :value="QUESTION_TYPE.MULTIPLE_CHOICE" />
+            <el-option label="判断题" :value="QUESTION_TYPE.TRUE_FALSE" />
+            <el-option label="填空题" :value="QUESTION_TYPE.FILL_BLANK" />
+            <el-option label="简答题" :value="QUESTION_TYPE.SUBJECTIVE" />
           </el-select>
         </el-form-item>
 
@@ -179,9 +185,9 @@
           <el-rate v-model="formData.difficulty" :max="3" />
         </el-form-item>
 
-        <el-form-item label="分值" prop="score">
+        <el-form-item label="分值" prop="defaultScore">
           <el-input-number
-            v-model="formData.score"
+            v-model="formData.defaultScore"
             :min="1"
             :max="100"
             controls-position="right"
@@ -189,15 +195,20 @@
         </el-form-item>
 
         <!-- 选项（选择题和判断题） -->
-        <template v-if="['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(formData.questionType)">
+        <template v-if="[QUESTION_TYPE.SINGLE_CHOICE, QUESTION_TYPE.MULTIPLE_CHOICE, QUESTION_TYPE.TRUE_FALSE].includes(formData.questionType)">
           <el-form-item label="选项">
             <div v-for="(option, index) in formData.options" :key="index" class="option-item">
+              <span class="option-seq">{{ option.optionSeq }}.</span>
               <el-input
-                v-model="option.content"
+                v-model="option.optionContent"
                 placeholder="请输入选项内容"
-                style="width: 400px"
+                style="width: 350px; margin-left: 10px"
               />
-              <el-checkbox v-model="option.isCorrect" style="margin-left: 10px">
+              <el-checkbox
+                :model-value="option.isCorrect === 1"
+                @change="(val) => option.isCorrect = val ? 1 : 0"
+                style="margin-left: 10px"
+              >
                 正确答案
               </el-checkbox>
               <el-button
@@ -215,7 +226,7 @@
 
         <!-- 答案（填空题和简答题） -->
         <el-form-item
-          v-if="['FILL_BLANK', 'SHORT_ANSWER'].includes(formData.questionType)"
+          v-if="[QUESTION_TYPE.FILL_BLANK, QUESTION_TYPE.SUBJECTIVE].includes(formData.questionType)"
           label="参考答案"
           prop="correctAnswer"
         >
@@ -253,6 +264,15 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import questionApi from '@/api/question'
 import questionBankApi from '@/api/questionBank'
+import {
+  QUESTION_TYPE,
+  getQuestionTypeName,
+  getQuestionTypeColor,
+  getAuditStatusName,
+  getAuditStatusColor,
+  getDifficultyName,
+  getDifficultyColor
+} from '@/utils/enums'
 
 const router = useRouter()
 
@@ -260,7 +280,7 @@ const router = useRouter()
 const searchForm = reactive({
   keyword: '',
   bankId: null,
-  questionType: '',
+  questionType: null,
   difficulty: null
 })
 
@@ -288,13 +308,14 @@ const formRef = ref(null)
 const formData = reactive({
   questionId: null,
   bankId: null,
-  questionType: 'SINGLE_CHOICE',
+  questionType: QUESTION_TYPE.SINGLE_CHOICE,
   questionContent: '',
   difficulty: 2,
-  score: 5,
-  options: [],
-  correctAnswer: '',
-  analysis: ''
+  defaultScore: 5,
+  options: [],  // 选项数组，默认为空
+  correctAnswer: '',  // 填空题和主观题的答案
+  analysis: '',  // 题目解析
+  knowledgeIds: ''  // 知识点IDs（可选）
 })
 
 // 表单验证规则
@@ -309,7 +330,7 @@ const formRules = {
     { required: true, message: '请输入题目内容', trigger: 'blur' },
     { min: 5, max: 1000, message: '长度在 5 到 1000 个字符', trigger: 'blur' }
   ],
-  score: [
+  defaultScore: [
     { required: true, message: '请输入分值', trigger: 'blur' }
   ]
 }
@@ -360,7 +381,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.bankId = null
-  searchForm.questionType = ''
+  searchForm.questionType = null
   searchForm.difficulty = null
   handleSearch()
 }
@@ -382,10 +403,37 @@ const handleCreate = () => {
 }
 
 // 编辑
-const handleEdit = (row) => {
+const handleEdit = async (row) => {
   dialogTitle.value = '编辑题目'
-  Object.assign(formData, row)
-  dialogVisible.value = true
+
+  // 先加载完整的题目详情（包含选项）
+  try {
+    const res = await questionApi.getById(row.questionId)
+    if (res.code === 200) {
+      const question = res.data
+
+      // 正确赋值表单数据
+      Object.assign(formData, {
+        questionId: question.questionId,
+        bankId: question.bankId,
+        questionType: question.questionType,
+        questionContent: question.questionContent,
+        difficulty: Number(question.difficulty) || 2,
+        defaultScore: question.defaultScore,
+        analysis: question.analysis || '',
+        // 深拷贝选项数组
+        options: question.options ? JSON.parse(JSON.stringify(question.options)) : [],
+        // 填空题和主观题的答案
+        correctAnswer: question.correctAnswer || ''
+      })
+
+      dialogVisible.value = true
+    } else {
+      ElMessage.error('加载题目详情失败')
+    }
+  } catch (error) {
+    ElMessage.error('加载题目详情失败')
+  }
 }
 
 // 查看
@@ -420,15 +468,22 @@ const handleDelete = async (row) => {
 
 // 添加选项
 const addOption = () => {
+  const optionSeq = String.fromCharCode(65 + formData.options.length) // A, B, C, D...
   formData.options.push({
-    content: '',
-    isCorrect: false
+    optionSeq: optionSeq,
+    optionContent: '',
+    isCorrect: 0  // 后端使用 0/1 表示
   })
 }
 
 // 删除选项
 const removeOption = (index) => {
   formData.options.splice(index, 1)
+
+  // 重新生成选项序号
+  formData.options.forEach((option, idx) => {
+    option.optionSeq = String.fromCharCode(65 + idx) // A, B, C, D...
+  })
 }
 
 // 提交表单
@@ -459,61 +514,22 @@ const handleSubmit = async () => {
 
 // 重置表单
 const resetForm = () => {
+  // 重置所有表单字段
   formData.questionId = null
   formData.bankId = null
-  formData.questionType = 'SINGLE_CHOICE'
+  formData.questionType = QUESTION_TYPE.SINGLE_CHOICE
   formData.questionContent = ''
   formData.difficulty = 2
-  formData.score = 5
+  formData.defaultScore = 5
   formData.options = []
   formData.correctAnswer = ''
   formData.analysis = ''
+  formData.knowledgeIds = ''
+
+  // 清除表单验证状态
   formRef.value?.resetFields()
 }
 
-// 获取题目类型名称
-const getQuestionTypeName = (type) => {
-  const map = {
-    SINGLE_CHOICE: '单选',
-    MULTIPLE_CHOICE: '多选',
-    TRUE_FALSE: '判断',
-    FILL_BLANK: '填空',
-    SHORT_ANSWER: '简答'
-  }
-  return map[type] || type
-}
-
-// 获取题目类型颜色
-const getQuestionTypeColor = (type) => {
-  const map = {
-    SINGLE_CHOICE: 'primary',
-    MULTIPLE_CHOICE: 'success',
-    TRUE_FALSE: 'warning',
-    FILL_BLANK: 'info',
-    SHORT_ANSWER: 'danger'
-  }
-  return map[type] || ''
-}
-
-// 获取审核状态名称
-const getAuditStatusName = (status) => {
-  const map = {
-    0: '待审核',
-    1: '已通过',
-    2: '未通过'
-  }
-  return map[status] || '未知'
-}
-
-// 获取审核状态颜色
-const getAuditStatusColor = (status) => {
-  const map = {
-    0: 'warning',
-    1: 'success',
-    2: 'danger'
-  }
-  return map[status] || 'info'
-}
 
 // 初始化
 onMounted(() => {
@@ -560,5 +576,11 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 10px;
 }
-</style>
 
+.option-seq {
+  font-weight: bold;
+  font-size: 16px;
+  color: #409eff;
+  min-width: 30px;
+}
+</style>

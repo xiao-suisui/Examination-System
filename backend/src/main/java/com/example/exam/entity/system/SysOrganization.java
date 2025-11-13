@@ -1,19 +1,15 @@
 package com.example.exam.entity.system;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * 组织表实体类
- *
  * 模块：系统管理模块（exam-system）
  * 职责：管理组织架构（学校、学院、班级等）
  * 表名：sys_organization
@@ -31,6 +27,7 @@ import java.time.LocalDateTime;
 @TableName("sys_organization")
 public class SysOrganization implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -58,16 +55,16 @@ public class SysOrganization implements Serializable {
     private Long parentId;
 
     /**
-     * 组织层级：1-学校/企业，2-学院/部门，3-班级/小组
+     * 组织层级：1-一级，2-二级，3-三级，4-四级
      */
     @TableField("org_level")
-    private Integer orgLevel;
+    private com.example.exam.common.enums.OrgLevel orgLevel;
 
     /**
-     * 组织类型：SCHOOL-学校，ENTERPRISE-企业，TRAINING-培训机构
+     * 组织类型：1-学校，2-企业，3-培训机构
      */
     @TableField("org_type")
-    private String orgType;
+    private com.example.exam.common.enums.OrgType orgType;
 
     /**
      * 排序
@@ -99,5 +96,11 @@ public class SysOrganization implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 子组织列表（非数据库字段，用于构建树形结构）
+     */
+    @TableField(exist = false)
+    private java.util.List<SysOrganization> children;
 }
 

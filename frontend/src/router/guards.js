@@ -89,6 +89,18 @@ export function setupOnError(router) {
   router.onError((error) => {
     console.error('路由错误:', error)
     NProgress.done()
+
+    // 处理组件加载失败
+    if (error.message.includes('Failed to fetch dynamically imported module')) {
+      ElMessage.error('页面加载失败，请刷新重试')
+      // 可以选择重新加载页面
+      // window.location.reload()
+    } else if (error.message.includes('Cannot read properties of null')) {
+      ElMessage.error('页面渲染出错，正在重新加载...')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    }
   })
 }
 

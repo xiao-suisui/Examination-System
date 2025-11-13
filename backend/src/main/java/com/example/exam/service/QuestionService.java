@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.exam.common.enums.AuditStatus;
-import com.example.exam.common.enums.DifficultyLevel;
+import com.example.exam.common.enums.DifficultyType;
 import com.example.exam.common.enums.QuestionType;
 import com.example.exam.entity.question.Question;
 
@@ -23,14 +23,14 @@ public interface QuestionService extends IService<Question> {
      * 分页查询题目
      */
     IPage<Question> pageQuestions(Page<Question> page, Long bankId, QuestionType questionType,
-                                   DifficultyLevel difficulty, AuditStatus auditStatus,
-                                   Long knowledgeId, String keyword);
+                                  DifficultyType difficulty, AuditStatus auditStatus,
+                                  Long knowledgeId, String keyword);
 
     /**
      * 随机抽取题目
      */
     List<Question> randomSelectQuestions(Long bankId, QuestionType questionType,
-                                          DifficultyLevel difficulty, List<Long> knowledgeIds,
+                                          DifficultyType difficulty, List<Long> knowledgeIds,
                                           Integer limit, List<Long> excludeIds);
 
     /**
@@ -42,11 +42,27 @@ public interface QuestionService extends IService<Question> {
      * 统计符合条件的题目数量
      */
     Integer countByCondition(Long bankId, QuestionType questionType,
-                             DifficultyLevel difficulty, List<Long> knowledgeIds);
+                             DifficultyType difficulty, List<Long> knowledgeIds);
 
     /**
      * 审核题目
      */
     boolean auditQuestion(Long questionId, AuditStatus auditStatus, String remark, Long auditorId);
+
+    /**
+     * 保存题目（含选项）
+     *
+     * @param question 题目信息（包含选项列表）
+     * @return 是否保存成功
+     */
+    boolean saveQuestionWithOptions(Question question);
+
+    /**
+     * 更新题目（含选项）
+     *
+     * @param question 题目信息（包含选项列表）
+     * @return 是否更新成功
+     */
+    boolean updateQuestionWithOptions(Question question);
 }
 

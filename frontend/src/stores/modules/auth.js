@@ -164,6 +164,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * 更新用户信息
+   * @param {Object} newUserInfo 新的用户信息
+   */
+  function updateUserInfo(newUserInfo) {
+    if (userInfo.value) {
+      userInfo.value = {
+        ...userInfo.value,
+        ...newUserInfo
+      }
+    }
+  }
+
   return {
     // State
     token,
@@ -184,7 +197,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     getCurrentUser,
     refreshToken,
-    initAuth
+    initAuth,
+    updateUserInfo
   }
 }, {
   persist: {

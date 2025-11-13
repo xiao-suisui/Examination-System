@@ -2,6 +2,7 @@ package com.example.exam.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.exam.common.enums.PaperType;
 import com.example.exam.common.result.Result;
 import com.example.exam.entity.paper.Paper;
 import com.example.exam.entity.paper.PaperRule;
@@ -34,21 +35,38 @@ public class PaperController {
     public Result<IPage<Paper>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
-            @Parameter(description = "试卷标题关键词") @RequestParam(required = false) String keyword,
-            @Parameter(description = "组卷方式：1-固定组卷，2-随机组卷") @RequestParam(required = false) Integer paperType,
-            @Parameter(description = "创建人ID") @RequestParam(required = false) Long createUserId) {
+            @Parameter(description = "试卷名称关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "题库ID") @RequestParam(required = false) Long bankId,
+            @Parameter(description = "组卷方式：1-手动组卷，2-自动组卷，3-随机组卷") @RequestParam(required = false) Integer paperType,
+            @Parameter(description = "审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝") @RequestParam(required = false) Integer auditStatus) {
+
+        PaperType paperTypeEnum = paperType != null ? PaperType.fromCode(paperType) : null;
+        com.example.exam.common.enums.AuditStatus auditStatusEnum = auditStatus != null ?
+            com.example.exam.common.enums.AuditStatus.fromCode(auditStatus) : null;
 
         Page<Paper> page = new Page<>(current, size);
-        IPage<Paper> result = paperService.pagePapers(page, keyword, paperType, createUserId);
+        IPage<Paper> result = paperService.pagePapers(page, keyword, bankId, paperTypeEnum, auditStatusEnum);
         return Result.success(result);
     }
 
     @Operation(summary = "查询试卷详情", description = "根据ID查询试卷详情，包含所有题目信息")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public Result<Paper> getById(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id) {
         Paper paper = paperService.getPaperWithQuestions(id);
         return paper != null ? Result.success(paper) : Result.error("试卷不存在");
+    }
+
+    @Operation(summary = "试卷统计", description = "查询试卷统计信息（题型分布、难度分布、使用情况）")
+    @com.example.exam.annotation.OperationLog(module = "试卷管理", type = "查询", description = "查询试卷统计信息", recordParams = false)
+    @GetMapping("/{id:[0-9]+}/statistics")
+    public Result<com.example.exam.dto.PaperStatisticsDTO> statistics(
+            @Parameter(description = "试卷ID", required = true) @PathVariable Long id) {
+        com.example.exam.dto.PaperStatisticsDTO statistics = paperService.getPaperStatistics(id);
+        if (statistics == null) {
+            return Result.error("试卷不存在");
+        }
+        return Result.success(statistics);
     }
 
     @Operation(summary = "创建试卷", description = "创建新试卷（手动组卷或自动组卷）")
@@ -62,7 +80,7 @@ public class PaperController {
 
     @Operation(summary = "更新试卷", description = "更新试卷基本信息")
     @com.example.exam.annotation.OperationLog(module = "试卷管理", type = "更新", description = "更新试卷")
-    @PutMapping("/{id}")
+    @PutMapping("/{id:[0-9]+}")
     public Result<Void> update(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id,
             @Parameter(description = "试卷信息", required = true) @RequestBody Paper paper) {
@@ -73,7 +91,7 @@ public class PaperController {
 
     @Operation(summary = "删除试卷", description = "删除试卷（未被使用的试卷可删除）")
     @com.example.exam.annotation.OperationLog(module = "试卷管理", type = "删除", description = "删除试卷")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:[0-9]+}")
     public Result<Void> delete(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id) {
         boolean success = paperService.removeById(id);
@@ -91,7 +109,7 @@ public class PaperController {
     }
 
     @Operation(summary = "添加题目到试卷", description = "手动向试卷中添加题目")
-    @PostMapping("/{id}/questions")
+    @PostMapping("/{id:[0-9]+}/questions")
     public Result<Void> addQuestions(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id,
             @Parameter(description = "题目ID列表", required = true) @RequestBody Long[] questionIds) {
@@ -100,7 +118,7 @@ public class PaperController {
     }
 
     @Operation(summary = "从试卷移除题目", description = "从试卷中移除指定题目")
-    @DeleteMapping("/{id}/questions")
+    @DeleteMapping("/{id:[0-9]+}/questions")
     public Result<Void> removeQuestions(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id,
             @Parameter(description = "题目ID列表", required = true) @RequestBody Long[] questionIds) {
@@ -109,7 +127,7 @@ public class PaperController {
     }
 
     @Operation(summary = "预览试卷", description = "预览试卷内容（不含答案）")
-    @GetMapping("/{id}/preview")
+    @GetMapping("/{id:[0-9]+}/preview")
     public Result<Paper> preview(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id) {
         Paper paper = paperService.previewPaper(id);
@@ -117,7 +135,7 @@ public class PaperController {
     }
 
     @Operation(summary = "复制试卷", description = "复制现有试卷生成新试卷")
-    @PostMapping("/{id}/copy")
+    @PostMapping("/{id:[0-9]+}/copy")
     public Result<Long> copy(
             @Parameter(description = "原试卷ID", required = true) @PathVariable Long id,
             @Parameter(description = "新试卷标题", required = true) @RequestParam String newTitle) {

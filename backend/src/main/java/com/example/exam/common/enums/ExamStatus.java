@@ -1,5 +1,7 @@
 package com.example.exam.common.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,56 +10,76 @@ import lombok.Getter;
  *
  * @author Exam System
  * @version 2.0
+ * @since 2025-11-07
  */
 @Getter
 @AllArgsConstructor
 public enum ExamStatus {
 
     /**
-     * 草稿
+     * 草稿：考试创建但未发布
      */
-    DRAFT("DRAFT", "草稿"),
+    DRAFT(0, "草稿"),
 
     /**
-     * 已发布
+     * 已发布：考试已发布，等待开始
      */
-    PUBLISHED("PUBLISHED", "已发布"),
+    PUBLISHED(1, "已发布"),
 
     /**
-     * 进行中
+     * 进行中：考试正在进行
      */
-    IN_PROGRESS("IN_PROGRESS", "进行中"),
+    IN_PROGRESS(2, "进行中"),
 
     /**
-     * 已结束
+     * 已结束：考试已结束
      */
-    ENDED("ENDED", "已结束"),
+    ENDED(3, "已结束"),
 
     /**
-     * 已取消
+     * 已取消：考试被取消
      */
-    CANCELLED("CANCELLED", "已取消");
+    CANCELLED(4, "已取消");
 
     /**
-     * 状态编码
+     * 状态编码（数据库存储值 - TINYINT）
      */
-    private final String code;
+    @EnumValue
+    @JsonValue
+    private final int code;
 
     /**
-     * 状态名称
+     * 状态名称（中文显示）
      */
     private final String name;
 
     /**
      * 根据编码获取枚举
+     *
+     * @param code 状态编码
+     * @return 考试状态枚举，未找到则返回null
      */
-    public static ExamStatus fromCode(String code) {
+    public static ExamStatus fromCode(int code) {
         for (ExamStatus status : values()) {
-            if (status.getCode().equals(code)) {
+            if (status.getCode() == code) {
                 return status;
             }
         }
-        throw new IllegalArgumentException("未知的考试状态编码: " + code);
+        return null;
+    }
+
+    /**
+     * 是否可以开始考试
+     */
+    public boolean canStart() {
+        return this == PUBLISHED;
+    }
+
+    /**
+     * 是否可以取消考试
+     */
+    public boolean canCancel() {
+        return this == DRAFT || this == PUBLISHED;
     }
 }
 

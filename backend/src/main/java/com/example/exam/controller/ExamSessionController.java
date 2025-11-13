@@ -27,6 +27,17 @@ public class ExamSessionController {
 
     private final ExamSessionService examSessionService;
 
+    @Operation(summary = "创建考试会话", description = "学生开始考试，创建考试会话")
+    @PostMapping
+    public Result<String> createSession(@RequestBody java.util.Map<String, Object> params) {
+        Long examId = Long.valueOf(params.get("examId").toString());
+        // TODO: 从认证信息中获取userId
+        Long userId = 1L;
+
+        ExamSession session = examSessionService.startExam(examId, userId);
+        return session != null ? Result.success("考试开始", session.getSessionId()) : Result.error("无法开始考试");
+    }
+
     @Operation(summary = "开始考试", description = "学生开始考试，创建考试会话")
     @PostMapping("/start")
     public Result<ExamSession> startExam(
@@ -118,6 +129,22 @@ public class ExamSessionController {
             @Parameter(description = "标记类型", required = true) @RequestParam String markType) {
         boolean success = examSessionService.markQuestion(sessionId, questionId, markType);
         return success ? Result.success() : Result.error("标记失败");
+    }
+
+    @Operation(summary = "记录切屏", description = "记录考生切屏行为")
+    @PostMapping("/{sessionId}/tab-switch")
+    public Result<Integer> recordTabSwitch(
+            @Parameter(description = "会话ID", required = true) @PathVariable String sessionId) {
+        int count = examSessionService.recordTabSwitch(sessionId);
+        return Result.success("切屏次数", count);
+    }
+
+    @Operation(summary = "心跳", description = "保持在线状态")
+    @PostMapping("/{sessionId}/heartbeat")
+    public Result<Void> heartbeat(
+            @Parameter(description = "会话ID", required = true) @PathVariable String sessionId) {
+        examSessionService.updateHeartbeat(sessionId);
+        return Result.success();
     }
 }
 

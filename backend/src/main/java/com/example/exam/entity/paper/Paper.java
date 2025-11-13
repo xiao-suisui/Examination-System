@@ -1,27 +1,25 @@
 package com.example.exam.entity.paper;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import com.example.exam.common.enums.AuditStatus;
+import com.example.exam.common.enums.PaperType;
+import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 试卷表实体类
- *
  * 模块：试卷管理模块（exam-paper）
- * 职责：管理试卷（固定组卷、随机组卷）
+ * 职责：管理试卷（手动组卷、自动组卷、随机组卷）
  * 表名：paper
  *
  * @author Exam System
  * @version 2.0
- * @since 2025-11-06
+ * @since 2025-11-07
  */
 @Data
 @Builder
@@ -32,6 +30,7 @@ import java.time.LocalDateTime;
 @TableName("paper")
 public class Paper implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -53,10 +52,10 @@ public class Paper implements Serializable {
     private String description;
 
     /**
-     * 组卷方式：1-固定组卷，2-随机组卷
+     * 组卷方式：1-手动组卷，2-自动组卷，3-随机组卷
      */
     @TableField("paper_type")
-    private Integer paperType;
+    private PaperType paperType;
 
     /**
      * 试卷总分
@@ -86,7 +85,7 @@ public class Paper implements Serializable {
      * 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
      */
     @TableField("audit_status")
-    private Integer auditStatus;
+    private AuditStatus auditStatus;
 
     /**
      * 审核备注
@@ -172,5 +171,25 @@ public class Paper implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    // ==================== 非数据库字段（用于前端显示） ====================
+
+    /**
+     * 题目数量（非数据库字段，从PaperRule或PaperQuestion统计）
+     */
+    @TableField(exist = false)
+    private Integer questionCount;
+
+    /**
+     * 题库名称（非数据库字段，关联查询）
+     */
+    @TableField(exist = false)
+    private String bankName;
+
+    /**
+     * 题库ID（非数据库字段，从PaperRule或题目中获取）
+     */
+    @TableField(exist = false)
+    private Long bankId;
 }
 

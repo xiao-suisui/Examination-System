@@ -37,10 +37,10 @@
               {{ question.bankName || '未知' }}
             </el-descriptions-item>
             <el-descriptions-item label="难度">
-              <el-rate v-model="question.difficulty" disabled show-score />
+              <el-rate :model-value="Number(question.difficulty) || 0" :max="3" disabled show-score />
             </el-descriptions-item>
             <el-descriptions-item label="分值">
-              {{ question.score }} 分
+              {{ question.defaultScore }} 分
             </el-descriptions-item>
             <el-descriptions-item label="审核状态">
               <el-tag :type="getAuditStatusColor(question.auditStatus)">
@@ -66,7 +66,7 @@
 
         <!-- 选项（选择题和判断题） -->
         <div
-          v-if="['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(question.questionType)"
+          v-if="[QUESTION_TYPE.SINGLE_CHOICE, QUESTION_TYPE.MULTIPLE_CHOICE, QUESTION_TYPE.TRUE_FALSE].includes(question.questionType)"
           class="info-section"
         >
           <h3>题目选项</h3>
@@ -75,11 +75,11 @@
               v-for="(option, index) in question.options"
               :key="index"
               class="option-item"
-              :class="{ 'correct-option': option.isCorrect }"
+              :class="{ 'correct-option': option.isCorrect === 1 }"
             >
               <div class="option-label">
-                <el-tag v-if="option.isCorrect" type="success" size="small">正确答案</el-tag>
-                <span class="label">{{ option.optionLabel }}.</span>
+                <el-tag v-if="option.isCorrect === 1" type="success" size="small">正确答案</el-tag>
+                <span class="label">{{ option.optionSeq }}.</span>
               </div>
               <div class="option-content">{{ option.optionContent }}</div>
             </div>
@@ -88,7 +88,7 @@
 
         <!-- 参考答案（填空题和简答题） -->
         <div
-          v-if="['FILL_BLANK', 'SHORT_ANSWER'].includes(question.questionType)"
+          v-if="[QUESTION_TYPE.FILL_BLANK, QUESTION_TYPE.SUBJECTIVE].includes(question.questionType)"
           class="info-section"
         >
           <h3>参考答案</h3>
@@ -146,6 +146,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import questionApi from '@/api/question'
+import {
+  QUESTION_TYPE,
+  getQuestionTypeName,
+  getQuestionTypeColor,
+  getAuditStatusName,
+  getAuditStatusColor
+} from '@/utils/enums'
 
 const route = useRoute()
 const router = useRouter()
@@ -212,38 +219,6 @@ const formatContent = (content) => {
   return content.replace(/\n/g, '<br/>')
 }
 
-// 辅助方法
-const getQuestionTypeName = (type) => {
-  const map = {
-    SINGLE_CHOICE: '单选题',
-    MULTIPLE_CHOICE: '多选题',
-    TRUE_FALSE: '判断题',
-    FILL_BLANK: '填空题',
-    SHORT_ANSWER: '简答题'
-  }
-  return map[type] || type
-}
-
-const getQuestionTypeColor = (type) => {
-  const map = {
-    SINGLE_CHOICE: 'primary',
-    MULTIPLE_CHOICE: 'success',
-    TRUE_FALSE: 'warning',
-    FILL_BLANK: 'info',
-    SHORT_ANSWER: 'danger'
-  }
-  return map[type] || ''
-}
-
-const getAuditStatusName = (status) => {
-  const map = { 0: '待审核', 1: '已通过', 2: '未通过' }
-  return map[status] || '未知'
-}
-
-const getAuditStatusColor = (status) => {
-  const map = { 0: 'warning', 1: 'success', 2: 'danger' }
-  return map[status] || 'info'
-}
 
 // 初始化
 onMounted(() => {
@@ -374,4 +349,3 @@ onMounted(() => {
   white-space: pre-wrap;
 }
 </style>
-

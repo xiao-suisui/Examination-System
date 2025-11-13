@@ -49,15 +49,12 @@
             <el-descriptions-item label="题目数量">
               {{ paper.questionCount || 0 }} 道
             </el-descriptions-item>
-            <el-descriptions-item label="考试时长">
-              {{ paper.duration }} 分钟
-            </el-descriptions-item>
             <el-descriptions-item label="及格分数">
               {{ paper.passScore }} 分
             </el-descriptions-item>
             <el-descriptions-item label="状态">
-              <el-tag :type="getStatusColor(paper.status)">
-                {{ getStatusName(paper.status) }}
+              <el-tag :type="getPaperStatusColor(paper.auditStatus)">
+                {{ getPaperStatusName(paper.auditStatus) }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="创建时间" :span="2">
@@ -207,11 +204,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Edit } from '@element-plus/icons-vue'
 import paperApi from '@/api/paper'
+import {
+  QUESTION_TYPE,
+  getPaperTypeName,
+  getPaperTypeColor,
+  getPaperStatusName,
+  getPaperStatusColor,
+  getQuestionTypeName,
+  getQuestionTypeColor,
+  getDifficultyName
+} from '@/utils/enums'
 
 const route = useRoute()
 const router = useRouter()
@@ -220,7 +227,7 @@ const router = useRouter()
 const loading = ref(false)
 const paper = ref({})
 const statistics = ref({})
-const activeCollapse = ref(['SINGLE_CHOICE', 'MULTIPLE_CHOICE'])
+const activeCollapse = ref([QUESTION_TYPE.SINGLE_CHOICE, QUESTION_TYPE.MULTIPLE_CHOICE])
 
 // 按题型分组的题目
 const questionsByType = computed(() => {
@@ -247,13 +254,25 @@ const loadPaperDetail = async () => {
   loading.value = true
   try {
     const paperId = route.params.id
+    if (!paperId) {
+      ElMessage.error('试卷ID不存在')
+      router.back()
+      return
+    }
+
     const res = await paperApi.getById(paperId)
-    if (res.code === 200) {
+    if (res.code === 200 && res.data) {
       paper.value = res.data
+      await nextTick()
       calculateStatistics()
+    } else {
+      ElMessage.error(res.msg || '加载失败')
+      router.back()
     }
   } catch (error) {
+    console.error('加载试卷详情失败:', error)
     ElMessage.error('加载失败')
+    router.back()
   } finally {
     loading.value = false
   }
@@ -330,53 +349,6 @@ const viewQuestion = (questionId) => {
   router.push(`/admin/question/${questionId}`)
 }
 
-// 辅助方法
-const getPaperTypeName = (type) => {
-  const map = { FORMAL: '正式', MOCK: '模拟', PRACTICE: '练习' }
-  return map[type] || type
-}
-
-const getPaperTypeColor = (type) => {
-  const map = { FORMAL: 'danger', MOCK: 'warning', PRACTICE: 'success' }
-  return map[type] || ''
-}
-
-const getStatusName = (status) => {
-  const map = { 0: '草稿', 1: '已发布', 2: '已归档' }
-  return map[status] || '未知'
-}
-
-const getStatusColor = (status) => {
-  const map = { 0: 'info', 1: 'success', 2: 'warning' }
-  return map[status] || 'info'
-}
-
-const getQuestionTypeName = (type) => {
-  const map = {
-    SINGLE_CHOICE: '单选题',
-    MULTIPLE_CHOICE: '多选题',
-    TRUE_FALSE: '判断题',
-    FILL_BLANK: '填空题',
-    SHORT_ANSWER: '简答题'
-  }
-  return map[type] || type
-}
-
-const getQuestionTypeColor = (type) => {
-  const map = {
-    SINGLE_CHOICE: 'primary',
-    MULTIPLE_CHOICE: 'success',
-    TRUE_FALSE: 'warning',
-    FILL_BLANK: 'info',
-    SHORT_ANSWER: 'danger'
-  }
-  return map[type] || ''
-}
-
-const getDifficultyName = (difficulty) => {
-  const map = { 1: '简单', 2: '中等', 3: '困难' }
-  return map[difficulty] || '未知'
-}
 
 // 初始化
 onMounted(() => {

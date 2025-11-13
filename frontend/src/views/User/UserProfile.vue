@@ -1,8 +1,8 @@
 <template>
   <div class="page-container">
     <el-card>
-      <template #header><h3>¹¦ÄÜ¿ª·¢ÖÐ</h3></template>
-      <el-empty description="¾´ÇëÆÚ´ý" />
+      <template #header><h3>ï¿½ï¿½ï¿½Ü¿ï¿½ï¿½ï¿½ï¿½ï¿½</h3></template>
+      <el-empty description="ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½" />
     </el-card>
   </div>
 </template>
