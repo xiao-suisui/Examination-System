@@ -1,6 +1,6 @@
 /**
  * 路由守卫
- * @description 权限验证、登录验证、页面标题设置等
+ * @description 权限验证、登录验证、页面标题设置
  */
 
 import { useAuthStore } from '@/stores/modules/auth'
