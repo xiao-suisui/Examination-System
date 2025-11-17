@@ -30,7 +30,7 @@
   margin-bottom: 20px;
 }
 
-/* 分页 */
+/* 分页功能 */
 .pagination-container {
   display: flex;
   justify-content: flex-end;
