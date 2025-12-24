@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 考试会话表实体类
  *
  * 模块：考试管理模块（exam-exam）
- * 职责：管理考试会话（答题进度、切屏记录）
+ * 职责：管理考试会话，答题进度、切屏记录
  * 表名：exam_session
  *
  * @author Exam System
