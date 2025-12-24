@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * 操作日志表实体类
  *
  * 模块：系统管理模块（exam-system）
- * 职责：记录系统操作日志（审计、追踪）
+ * 职责：记录系统操作日志
  * 表名：sys_operation_log
  *
  * @author Exam System
