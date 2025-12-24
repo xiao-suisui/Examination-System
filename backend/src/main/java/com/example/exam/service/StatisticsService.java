@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public interface StatisticsService {
 
     /**
-     * 获取考试统计概览
+     * 获取考试统计
      */
     Object getExamOverview(Long examId);
 
