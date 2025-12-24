@@ -250,6 +250,7 @@ Examination-System/
 
 ### 后端技术
 
+<<<<<<< HEAD
 | 技术            | 版本    | 说明      |
 | --------------- | ------- | --------- |
 | Spring Boot     | 3.2.3   | 核心框架  |
@@ -274,6 +275,32 @@ Examination-System/
 | Pinia        | 2.1.7  | 状态管理     |
 | ECharts      | 5.5.0  | 图表库       |
 | Quill        | 2.0.0  | 富文本编辑器 |
+=======
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Spring Boot | 3.2.3 | 核心框架 |
+| Spring Security | 6.2.2 | 安全框架 |
+| MyBatis Plus | 3.5.5 | ORM框架 |
+| MySQL | 8.0.35+ | 数据库 |
+| Redis | 7.0.15 | 缓存 |
+| JWT | 0.12.3 | 认证 |
+| Lombok | 1.18.30 | 简化代码 |
+| Hutool | 5.8.25 | 工具库 |
+| EasyExcel | 3.3.3 | Excel处理 |
+| Quartz | 2.3.2 | 定时任务 |
+
+### 前端技术
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Vue | 3.4.21 | 核心框架 |
+| Element Plus | 2.6.1 | UI组件库 |
+| Vite | 5.1.4 | 构建工具 |
+| Axios | 1.6.7 | HTTP请求 |
+| Pinia | 2.1.7 | 状态管理 |
+| ECharts | 5.5.0 | 图表库 |
+| Quill | 2.0.0 | 富文本编辑器 |
+>>>>>>> remotes/origin/main
 
 ---
 
@@ -310,7 +337,10 @@ Examination-System/
 ### [2.0.0-SNAPSHOT] - 2025-11-06
 
 #### 新增
+<<<<<<< HEAD
 
+=======
+>>>>>>> remotes/origin/main
 - ✅ 完整的数据库设计（19张表）
 - ✅ 8种题型枚举类
 - ✅ 19个实体类（支持逻辑删除、自动填充）
@@ -318,7 +348,10 @@ Examination-System/
 - ✅ MyBatis Plus配置（分页、乐观锁、防攻击）
 
 #### 改进
+<<<<<<< HEAD
 
+=======
+>>>>>>> remotes/origin/main
 - ✅ JWT版本升级至0.12.3
 - ✅ 项目名称改为exam-system
 - ✅ 添加EasyExcel、Quartz依赖
