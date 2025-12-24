@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * @version 2.0
  * @since 2025-11-06
  */
-@Tag(name = "统计分析", description = "考试数据统计、成绩分析、报表生成等功能")
+@Tag(name = "统计分析", description = "考试数据统计、成绩分析、报表生成功能")
 @RestController
 @RequestMapping("/api/statistics")
 @RequiredArgsConstructor
