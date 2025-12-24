@@ -50,7 +50,7 @@ public class PaperRule implements Serializable {
     private Long bankId;
 
     /**
-     * 题型
+     * 题型：1-单选，2-多选，3-不定项，4-判断，5-匹配，6-排序，7-填空，8-主观
      */
     @TableField("question_type")
     private QuestionType questionType;

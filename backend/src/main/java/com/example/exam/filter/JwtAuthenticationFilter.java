@@ -69,12 +69,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // 4. 验证Token有效性
                 if (jwtUtil.validateToken(token, username)) {
-                    // 5. 创建认证对象
+                    // 5. 从Token中提取更多用户信息（如果可用）
+                    // 注意：这里我们创建一个简单的UserDetailsImpl对象
+                    // 如果需要完整的用户信息，应该从数据库加载
+                    com.example.exam.security.UserDetailsImpl userDetails = new com.example.exam.security.UserDetailsImpl();
+                    userDetails.setUserId(userId);
+                    userDetails.setUsername(username);
+                    // 尝试从Token中获取roleId（如果有的话）
+                    try {
+                        Long roleId = jwtUtil.getRoleIdFromToken(token);
+                        userDetails.setRoleId(roleId);
+                    } catch (Exception ignored) {
+                        // Token中可能没有roleId，忽略
+                    }
+                    userDetails.setEnabled(true);
+
+                    // 创建认证对象，使用UserDetailsImpl作为principal
                     UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                            userId,  // principal 使用 userId
-                            null,    // credentials
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                            userDetails,  // principal 使用 UserDetailsImpl
+                            null,         // credentials
+                            userDetails.getAuthorities()
                         );
 
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

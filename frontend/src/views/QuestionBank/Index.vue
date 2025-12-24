@@ -12,6 +12,15 @@
     <!-- 搜索区域 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form-item label="所属科目">
+          <SubjectSelector
+            v-model="searchForm.subjectId"
+            :only-managed="true"
+            clearable
+            style="width: 200px"
+            @change="handleSubjectChange"
+          />
+        </el-form-item>
         <el-form-item label="题库名称">
           <el-input
             v-model="searchForm.keyword"
@@ -137,6 +146,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import questionBankApi from '@/api/questionBank'
+import SubjectSelector from '@/components/SubjectSelector.vue'
 import {
   BANK_TYPE,
   getBankTypeName,
@@ -148,7 +158,8 @@ const router = useRouter()
 // 搜索表单
 const searchForm = reactive({
   keyword: '',
-  bankType: null
+  bankType: null,
+  subjectId: null
 })
 
 // 表格数据
@@ -220,6 +231,12 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.bankType = null
+  searchForm.subjectId = null
+  handleSearch()
+}
+
+// 科目选择变化
+const handleSubjectChange = (subjectId) => {
   handleSearch()
 }
 
@@ -248,8 +265,13 @@ const handleEdit = (row) => {
 
 // 查看
 const handleView = (row) => {
-  // 跳转到题库详情页面
-  router.push(`/admin/question-bank/${row.bankId}`)
+  router.push({
+    name: 'QuestionBankDetail',
+    params: { id: row.bankId }
+  }).catch(err => {
+    console.error('路由跳转失败:', err)
+    ElMessage.error('页面跳转失败')
+  })
 }
 
 // 删除

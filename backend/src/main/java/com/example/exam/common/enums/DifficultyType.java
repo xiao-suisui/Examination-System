@@ -38,7 +38,7 @@ public enum DifficultyType {
      */
     @EnumValue
     @JsonValue
-    private final int Type;
+    private final int code;
 
     /**
      * 难度名称（中文显示）
@@ -46,19 +46,25 @@ public enum DifficultyType {
     private final String name;
 
     /**
-     * 根据等级获取难度枚举
+     * 根据编码获取难度枚举
      *
-     * @param code 难度等级
-     * @return 难度枚举，未找到则返回null
+     * @param code 难度编码
+     * @return 难度枚举
+     * @throws IllegalArgumentException 如果编码无效
      */
-    public static DifficultyType fromCode(int code) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public static DifficultyType of(Integer code) {
+        if (code == null) {
+            return null;
+        }
         for (DifficultyType difficulty : values()) {
-            if (difficulty.getType() == code) {
+            if (difficulty.getCode() == code) {
                 return difficulty;
             }
         }
-        return null;
+        throw new IllegalArgumentException("无效的难度编码: " + code);
     }
+
 
     /**
      * 获取难度系数（用于分数计算）

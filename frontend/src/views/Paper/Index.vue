@@ -18,6 +18,15 @@
     <!-- 搜索区域 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form-item label="所属科目">
+          <SubjectSelector
+            v-model="searchForm.subjectId"
+            :only-managed="true"
+            clearable
+            style="width: 200px"
+            @change="handleSubjectChange"
+          />
+        </el-form-item>
         <el-form-item label="试卷名称">
           <el-input
             v-model="searchForm.keyword"
@@ -32,6 +41,7 @@
             v-model="searchForm.bankId"
             placeholder="选择题库"
             clearable
+            filterable
             style="width: 150px"
             @clear="handleSearch"
           >
@@ -44,18 +54,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select
+          <EnumSelect
             v-model="searchForm.auditStatus"
+            :options="AUDIT_STATUS_LABELS"
             placeholder="选择状态"
-            clearable
             style="width: 120px"
-            @clear="handleSearch"
-          >
-            <el-option label="草稿" :value="0" />
-            <el-option label="待审核" :value="1" />
-            <el-option label="已通过" :value="2" />
-            <el-option label="已拒绝" :value="3" />
-          </el-select>
+          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -100,7 +104,7 @@
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="success" @click="handlePreview(row)">预览</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="danger" @click="handleDeletePaper(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -108,13 +112,13 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
-          v-model:current-page="pagination.current"
-          v-model:page-size="pagination.size"
+          v-model:current-page="searchForm.current"
+          v-model:page-size="searchForm.size"
           :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
+          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
+          @current-change="handlePageChange"
         />
       </div>
     </el-card>
@@ -140,11 +144,11 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="组卷方式" prop="paperType">
-              <el-select v-model="formData.paperType" placeholder="请选择组卷方式" style="width: 100%">
-                <el-option label="手动组卷" :value="PAPER_TYPE.MANUAL" />
-                <el-option label="自动组卷" :value="PAPER_TYPE.AUTO" />
-                <el-option label="随机组卷" :value="PAPER_TYPE.RANDOM" />
-              </el-select>
+              <EnumSelect
+                v-model="formData.paperType"
+                :options="PAPER_TYPE_LABELS"
+                placeholder="请选择组卷方式"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -293,44 +297,82 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Plus, MagicStick } from '@element-plus/icons-vue'
 import QuestionSelector from '@/components/QuestionSelector.vue'
+import EnumSelect from '@/components/EnumSelect.vue'
+import SubjectSelector from '@/components/SubjectSelector.vue'
+import { useTableList } from '@/composables/useTableList'
 import paperApi from '@/api/paper'
 import questionBankApi from '@/api/questionBank'
 import {
   PAPER_TYPE,
+  PAPER_TYPE_LABELS,
+  AUDIT_STATUS_LABELS,
   getPaperTypeName,
   getPaperTypeColor,
   getAuditStatusName,
   getAuditStatusColor,
   getQuestionTypeName
 } from '@/utils/enums'
+import { required } from '@/utils/validate'
 
 const router = useRouter()
+const route = useRoute()
 
-// 搜索表单
-const searchForm = reactive({
+// ==================== 使用组合式函数 ====================
+const {
+  loading,
+  tableData,
+  total,
+  searchForm,
+  loadData,
+  handleSearch,
+  handleReset,
+  handlePageChange,
+  handleSizeChange,
+  handleDelete
+} = useTableList(paperApi, {
   keyword: '',
+  subjectId: null,
   bankId: null,
+  paperType: null,
   auditStatus: null
 })
 
-// 表格数据
-const tableData = ref([])
-const loading = ref(false)
+// ==================== 题库列表 ====================
 const questionBanks = ref([])
 
-// 分页
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
-})
+const loadQuestionBanks = async (subjectId = null) => {
+  try {
+    const params = subjectId ? { subjectId } : {}
+    const res = await questionBankApi.page({
+      current: 1,
+      size: 100,
+      ...params
+    })
+    if (res.code === 200) {
+      questionBanks.value = res.data?.records || []
+    }
+  } catch (error) {
+    console.error('加载题库失败', error)
+  }
+}
 
-// 对话框
+// 科目选择变化
+const handleSubjectChange = (subjectId) => {
+  searchForm.bankId = null
+  if (subjectId) {
+    loadQuestionBanks(subjectId)
+  } else {
+    loadQuestionBanks()
+  }
+  handleSearch()
+}
+
+// ==================== 对话框 ====================
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const submitLoading = ref(false)
@@ -355,78 +397,23 @@ const autoGenerateForm = reactive({
 const formData = reactive({
   paperId: null,
   paperName: '',
-  paperType: PAPER_TYPE.MANUAL,  // 默认手动组卷
+  paperType: PAPER_TYPE.MANUAL,
   bankId: null,
   passScore: 60,
   totalScore: 100,
   description: '',
-  questions: []  // 试卷题目列表
+  questions: []
 })
 
-// 表单验证规则
+// 表单验证规则（使用统一验证函数）
 const formRules = {
-  paperName: [
-    { required: true, message: '请输入试卷名称', trigger: 'blur' }
-  ],
-  paperType: [
-    { required: true, message: '请选择试卷类型', trigger: 'change' }
-  ],
-  bankId: [
-    { required: true, message: '请选择题库', trigger: 'change' }
-  ]
+  paperName: [required('请输入试卷名称')],
+  paperType: [required('请选择组卷方式', 'change')],
+  bankId: [required('请选择题库', 'change')]
 }
 
-// 加载题库列表
-const loadQuestionBanks = async () => {
-  try {
-    const res = await questionBankApi.list()
-    if (res.code === 200) {
-      questionBanks.value = res.data
-    }
-  } catch (error) {
-    console.error('加载题库失败', error)
-  }
-}
 
-// 加载试卷列表
-const loadPapers = async () => {
-  loading.value = true
-  try {
-    const res = await paperApi.page({
-      current: pagination.current,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      bankId: searchForm.bankId || undefined,
-      auditStatus: searchForm.auditStatus
-    })
-    if (res.code === 200) {
-      tableData.value = res.data.records
-      pagination.total = res.data.total
-    }
-  } catch (error) {
-    ElMessage.error('加载失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 搜索
-const handleSearch = () => {
-  pagination.current = 1
-  loadPapers()
-}
-
-// 重置
-const handleReset = () => {
-  searchForm.keyword = ''
-  searchForm.bankId = null
-  searchForm.auditStatus = null
-  handleSearch()
-}
-
-// 分页变化
-const handleSizeChange = () => loadPapers()
-const handleCurrentChange = () => loadPapers()
+// ==================== 对话框操作 ====================
 
 // 创建
 const handleCreate = () => {
@@ -436,15 +423,37 @@ const handleCreate = () => {
 }
 
 // 编辑
-const handleEdit = (row) => {
+const handleEdit = async (row) => {
   dialogTitle.value = '编辑试卷'
-  Object.assign(formData, row)
+
+  // 如果传入的是试卷ID（从URL参数来），需要先加载试卷数据
+  if (typeof row === 'number' || typeof row === 'string') {
+    try {
+      const res = await paperApi.getById(row)
+      if (res.code === 200 && res.data) {
+        Object.assign(formData, res.data)
+        selectedQuestions.value = res.data.questions || []
+      } else {
+        ElMessage.error('加载试卷数据失败')
+        return
+      }
+    } catch (error) {
+      console.error('加载试卷数据失败:', error)
+      ElMessage.error('加载试卷数据失败')
+      return
+    }
+  } else {
+    // 如果传入的是完整的试卷对象
+    Object.assign(formData, row)
+    selectedQuestions.value = row.questions || []
+  }
+
   dialogVisible.value = true
 }
 
 // 查看
 const handleView = (row) => {
-  router.push(`/admin/paper/${row.paperId}`)
+  router.push({ name: 'PaperDetail', params: { id: row.paperId } })
 }
 
 // 预览
@@ -452,25 +461,12 @@ const handlePreview = (row) => {
   ElMessage.info('预览试卷：' + row.paperName)
 }
 
-// 删除
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除试卷"${row.paperName}"吗？`,
-      '警告',
-      { type: 'warning' }
-    )
-
-    const res = await paperApi.deleteById(row.paperId)
-    if (res.code === 200) {
-      ElMessage.success('删除成功')
-      loadPapers()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
+// 删除（使用 useTableList 提供的）
+const handleDeletePaper = (row) => {
+  handleDelete(
+    row.paperId,
+    `确定要删除试卷"${row.paperName}"吗？`
+  )
 }
 
 // 智能组卷
@@ -479,11 +475,122 @@ const handleAutoGenerate = () => {
 }
 
 const submitAutoGenerate = async () => {
-  const res = await paperApi.autoGenerate(autoGenerateForm)
-  if (res.code === 200) {
-    ElMessage.success('组卷成功')
-    autoGenerateVisible.value = false
-    loadPapers()
+  // 验证必填项
+  if (!autoGenerateForm.paperName) {
+    ElMessage.warning('请输入试卷名称')
+    return
+  }
+  if (!autoGenerateForm.bankId) {
+    ElMessage.warning('请选择题库')
+    return
+  }
+
+  // 构建组卷规则列表
+  const rules = []
+
+  // 单选题规则
+  if (autoGenerateForm.singleChoiceCount > 0) {
+    rules.push({
+      bankId: autoGenerateForm.bankId,
+      questionType: 1, // 单选题
+      totalNum: autoGenerateForm.singleChoiceCount,
+      singleScore: 2,
+      easyNum: 0,
+      mediumNum: 0,
+      hardNum: 0
+    })
+  }
+
+  // 多选题规则
+  if (autoGenerateForm.multipleChoiceCount > 0) {
+    rules.push({
+      bankId: autoGenerateForm.bankId,
+      questionType: 2, // 多选题
+      totalNum: autoGenerateForm.multipleChoiceCount,
+      singleScore: 3,
+      easyNum: 0,
+      mediumNum: 0,
+      hardNum: 0
+    })
+  }
+
+  // 判断题规则
+  if (autoGenerateForm.trueFalseCount > 0) {
+    rules.push({
+      bankId: autoGenerateForm.bankId,
+      questionType: 3, // 判断题
+      totalNum: autoGenerateForm.trueFalseCount,
+      singleScore: 2,
+      easyNum: 0,
+      mediumNum: 0,
+      hardNum: 0
+    })
+  }
+
+  // 填空题规则
+  if (autoGenerateForm.fillBlankCount > 0) {
+    rules.push({
+      bankId: autoGenerateForm.bankId,
+      questionType: 4, // 填空题
+      totalNum: autoGenerateForm.fillBlankCount,
+      singleScore: 5,
+      easyNum: 0,
+      mediumNum: 0,
+      hardNum: 0
+    })
+  }
+
+  // 主观题规则
+  if (autoGenerateForm.shortAnswerCount > 0) {
+    rules.push({
+      bankId: autoGenerateForm.bankId,
+      questionType: 5, // 主观题
+      totalNum: autoGenerateForm.shortAnswerCount,
+      singleScore: 10,
+      easyNum: 0,
+      mediumNum: 0,
+      hardNum: 0
+    })
+  }
+
+  if (rules.length === 0) {
+    ElMessage.warning('请至少选择一种题型')
+    return
+  }
+
+  // 构建请求数据
+  const requestData = {
+    paper: {
+      paperName: autoGenerateForm.paperName,
+      paperType: 2, // 自动组卷
+      description: '通过智能组卷生成的试卷',
+      passScore: 60,
+      auditStatus: 0 // 草稿
+    },
+    rules: rules
+  }
+
+  try {
+    const res = await paperApi.autoGenerate(requestData)
+    if (res.code === 200) {
+      ElMessage.success('组卷成功')
+      autoGenerateVisible.value = false
+      loadPapers()
+      // 重置表单
+      autoGenerateForm.paperName = ''
+      autoGenerateForm.bankId = null
+      autoGenerateForm.singleChoiceCount = 10
+      autoGenerateForm.multipleChoiceCount = 5
+      autoGenerateForm.trueFalseCount = 5
+      autoGenerateForm.fillBlankCount = 3
+      autoGenerateForm.shortAnswerCount = 2
+      autoGenerateForm.difficultyMode = 'MIXED'
+    } else {
+      ElMessage.error(res.message || '组卷失败')
+    }
+  } catch (error) {
+    console.error('组卷失败:', error)
+    ElMessage.error('组卷失败')
   }
 }
 
@@ -552,14 +659,31 @@ const resetForm = () => {
   formData.description = ''
   formData.questions = []
   selectedQuestions.value = []
-  formRef.value?.resetFields()
+  formRef.value.resetFields()
 }
 
 
-// 初始化
-onMounted(() => {
+// ==================== 初始化 ====================
+onMounted(async () => {
   loadQuestionBanks()
-  loadPapers()
+  await loadData()
+
+  // 处理 URL query 参数
+  const { edit, tab } = route.query
+  if (edit) {
+    // 如果有 edit 参数，自动打开编辑对话框
+    await nextTick()
+    await handleEdit(edit)
+
+    // TODO: 如果有 tab 参数，切换到对应标签页（如果对话框有标签页的话）
+    if (tab === 'questions') {
+      // 可以在这里添加切换到题目标签页的逻辑
+      console.log('切换到题目标签页:', tab)
+    }
+
+    // 清除 URL 参数，避免刷新页面时重复打开
+    router.replace({ query: {} })
+  }
 })
 </script>
 
@@ -597,4 +721,3 @@ onMounted(() => {
   margin-top: 20px;
 }
 </style>
-

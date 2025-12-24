@@ -1,119 +1,206 @@
-# 在线考试系统 - Online Examination System
+# 🎓 在线考试系统 v1.0-MVP
 
-[![Version](https://img.shields.io/badge/version-2.0.0--SNAPSHOT-blue)](https://github.com/your-repo/exam-system)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen)](https://spring.io/projects/spring-boot)
-[![Vue](https://img.shields.io/badge/Vue-3.4.21-success)](https://vuejs.org/)
-[![Progress](https://img.shields.io/badge/progress-50%25-yellow)](docs/learn/MIGRATION_PROGRESS_REPORT.md)
-
-> 一个功能完整的在线考试系统，支持8种题型、随机组卷、自动判分、防作弊等核心功能。
+> 基于 Spring Boot 3 + Vue 3 的在线考试系统
+> 
+> **周一交付版本** - 核心功能完整，权限系统完善
 
 ---
 
-## 🎯 项目简介
+## 📋 项目简介
 
-本项目是从**问卷调查系统**改造为**在线考试系统**的完整解决方案，实现了从试卷创建到成绩分析的全流程管理。
+这是一个功能完善的在线考试系统，支持题库管理、试卷组卷、在线考试、自动阅卷等核心功能。系统采用前后端分离架构，实现了完整的RBAC权限控制。
 
-### 核心特性
+### ✨ 核心特性
 
-- ✅ **8种题型支持**：单选、多选、不定项、判断、匹配、排序、填空、主观题
-- ✅ **智能组卷**：支持固定组卷和随机组卷
-- ✅ **自动判分**：客观题自动判分，主观题人工批改
-- ✅ **防作弊**：切屏检测、单设备登录、主观题防抄袭
-- ✅ **成绩分析**：多维度成绩统计、数据可视化
-- ✅ **权限管理**：RBAC三层权限模型（角色-资源-操作）
-- ✅ **API文档**：集成Knife4j，在线调试所有接口
+- 🔐 **完善的权限系统** - 前后端双重权限验证
+- 📚 **灵活的题库管理** - 支持单选、多选、判断等题型
+- 📝 **智能组卷** - 手动组卷（MVP版本）
+- 🎯 **在线考试** - 实时答题，自动保存
+- ⚡ **自动阅卷** - 客观题即时评分
+- 👥 **多角色支持** - 管理员、教师、学生
+- 🏢 **组织架构** - 支持多级组织管理
+- 📊 **科目管理** - 支持多科目教学
 
 ---
 
 ## 🚀 快速开始
 
-### 前置要求
-
-- **JDK**: 17+
-- **Node.js**: 18.19.0 LTS
-- **MySQL**: 8.0.35+
-- **Redis**: 7.0.15+（可选）
-- **Maven**: 3.9.6+
-
-### 安装步骤
-
-#### 1. 导入项目到IDEA
-
-1. 打开IDEA
-2. File → Open
-3. 选择项目目录：`D:\Desktop\Examination-System`
-4. 等待IDEA加载项目和下载Maven依赖
-
-#### 2. 数据库初始化
-
-在MySQL中执行初始化脚本：
-
-```sql
--- 方式1：在MySQL命令行中
-source D:\Desktop\Examination-System\database\exam_system_complete.sql
-
--- 方式2：在MySQL Workbench中
--- 打开并执行 exam_system_complete.sql 文件
-```
-
-#### 3. 配置数据库连接
-
-编辑 `backend/src/main/resources/application.yml`：
-
-```yaml
-spring:
-  datasource:
-    username: root
-    password: 你的数据库密码  # 修改这里
-```
-
-#### 4. 启动后端（在IDEA中）
-
-1. 找到主类：`com.example.exam.ExamSystemApplication`
-2. 右键 → Run 'ExamSystemApplication'
-3. 等待启动完成（控制台显示"Started ExamSystemApplication"）
-4. 访问：http://localhost:8080
-
-#### 5. 访问API文档（推荐）
-
-打开浏览器访问在线API文档：
-
-```
-Knife4j文档: http://localhost:8080/doc.html
-Swagger UI: http://localhost:8080/swagger-ui.html
-```
-
-在线测试所有API接口，无需Postman！
-
-#### 6. 测试API（可选）
-
-使用IDEA的HTTP Client或Postman测试：
-
-```http
-### 查询题目列表
-GET http://localhost:8080/api/question/page?current=1&size=10
-
-### 查询题目详情
-GET http://localhost:8080/api/question/1
-```
-
-#### 7. 启动前端（可选）
+### 一键启动（推荐）
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# 双击运行启动脚本
+start-all.bat
 ```
 
-前端启动成功后访问：http://localhost:5173
+等待30秒，访问：http://localhost:3000
 
-#### 7. 默认管理员账号
+### 分步启动
 
-- **用户名**：admin
-- **密码**：Admin@123
+#### 1. 启动后端
+```bash
+start-backend.bat
+```
 
-> ⚠️ **注意**：首次运行需要确保MySQL和Redis已启动（Redis可选）
+#### 2. 启动前端
+```bash
+start-frontend.bat
+```
+
+---
+
+## 🔑 测试账号
+
+| 角色 | 用户名 | 密码 | 说明 |
+|------|--------|------|------|
+| 管理员 | admin | admin123 | 全部权限 |
+| 教师 | teacher | teacher123 | 题库、试卷、考试管理 |
+| 学生 | student | student123 | 参加考试、查看成绩 |
+
+---
+
+## 🛠️ 技术栈
+
+### 后端
+- **框架**: Spring Boot 3.2.3
+- **安全**: Spring Security + JWT
+- **数据库**: MySQL 8.0 + MyBatis-Plus 3.5.5
+- **缓存**: Redis 6.0+
+- **文档**: Knife4j (Swagger)
+
+### 前端
+- **框架**: Vue 3.3 + Vite 5.0
+- **状态管理**: Pinia
+- **路由**: Vue Router 4
+- **UI框架**: Element Plus
+- **HTTP**: Axios
+
+---
+
+## 📦 环境要求
+
+- JDK 17+
+- Maven 3.8+
+- Node.js 16+
+- MySQL 8.0
+- Redis 6.0+
+
+---
+
+## 🎯 核心功能
+
+### ✅ 已实现功能
+
+#### 1. 用户管理
+- 用户注册/登录
+- 角色权限管理
+- 组织架构管理
+
+#### 2. 题库管理
+- 创建/编辑/删除题库
+- 题目分类管理
+- 题目导入/导出
+
+#### 3. 题目管理
+- 单选题、多选题、判断题
+- 题目编辑器
+- 难度分级
+
+#### 4. 试卷管理
+- 手动组卷
+- 试卷预览
+- 试卷复制
+
+#### 5. 考试管理
+- 创建/发布考试
+- 考试时间控制
+- 考试监控
+
+#### 6. 学生考试
+- 在线答题
+- 自动保存
+- 即时评分
+- 成绩查询
+
+#### 7. 权限系统
+- 前端路由权限
+- 按钮级别权限
+- 后端接口权限
+- 数据权限框架
+
+### 🔜 未来规划
+
+- 自动组卷（按规则生成）
+- 随机组卷（抽题模式）
+- 主观题批改
+- 成绩分析统计
+- 错题本功能
+- 知识点分析
+- 考试监控
+- 移动端支持
+
+---
+
+## 📊 数据库
+
+### 初始化
+
+```sql
+-- 1. 创建数据库
+CREATE DATABASE exam_system DEFAULT CHARACTER SET utf8mb4;
+
+-- 2. 导入数据
+USE exam_system;
+SOURCE database/newsql.sql;
+```
+
+### 数据表
+
+- `sys_user` - 用户表
+- `sys_role` - 角色表
+- `sys_permission` - 权限表
+- `sys_organization` - 组织表
+- `subject` - 科目表
+- `question_bank` - 题库表
+- `question` - 题目表
+- `question_option` - 选项表
+- `paper` - 试卷表
+- `paper_question` - 试卷题目关联表
+- `exam` - 考试表
+- `exam_session` - 考试会话表
+- `exam_answer` - 答题记录表
+
+---
+
+## 🔐 权限系统
+
+### 后端权限
+
+使用 `@RequirePermission` 注解：
+
+```java
+@RequirePermission(value = "question_bank:create", desc = "创建题库")
+@PostMapping
+public Result<Void> create(@RequestBody QuestionBank bank) {
+    // ...
+}
+```
+
+### 前端权限
+
+#### 路由权限
+```javascript
+{
+  path: '/question-bank',
+  meta: {
+    permission: 'question_bank:view'
+  }
+}
+```
+
+#### 按钮权限
+```vue
+<el-button v-permission="'question:create'">创建题目</el-button>
+```
 
 ---
 
@@ -121,227 +208,111 @@ npm run dev
 
 ```
 Examination-System/
-├── backend/                          # 后端代码（Spring Boot）
-│   ├── src/main/java/com/example/exam/
-│   │   ├── common/                  # 公共模块
-│   │   │   └── enums/              # 枚举类（4个）✅
-│   │   ├── entity/                 # 实体类（19个）✅
-│   │   │   ├── system/            # 系统模块（7个）
-│   │   │   ├── question/          # 题库模块（5个）
-│   │   │   ├── paper/             # 试卷模块（3个）
-│   │   │   └── exam/              # 考试模块（4个）
-│   │   ├── mapper/                 # Mapper接口（19个）✅
-│   │   │   ├── system/
-│   │   │   ├── question/
-│   │   │   ├── paper/
-│   │   │   └── exam/
-│   │   ├── service/                # Service层（开发中）
-│   │   ├── controller/             # Controller层（待开发）
-│   │   ├── config/                 # 配置类（2个）✅
-│   │   └── util/                   # 工具类
-│   └── src/main/resources/
-│       ├── application.yml         # 配置文件
-│       └── mapper/                 # MyBatis XML（待创建）
-├── frontend/                         # 前端代码（Vue 3）
-│   ├── src/
-│   │   ├── api/                    # API接口
-│   │   ├── components/             # 组件
-│   │   ├── views/                  # 页面
-│   │   ├── routers/                # 路由
-│   │   └── stores/                 # 状态管理
-│   └── package.json
-├── database/                         # 数据库脚本
-│   ├── exam_system_complete.sql    # 完整数据库脚本 ✅
-│   └── DATA_INTEGRITY_GUIDE.md     # 数据完整性指南
-├── pom.xml                          # Maven配置 ✅
-├── README.md                        # 本文件
-└── docs/                            # 文档目录
-    ├── EXAM_SYSTEM_MIGRATION_GUIDE.md     # 改造指南
-    ├── MIGRATION_PROGRESS_REPORT.md       # 进度报告
-    ├── QUICK_START.md                     # 快速开始指南
-    └── DATA_LAYER_COMPLETE_SUMMARY.md     # 数据层完成总结
+├── backend/                 # 后端代码
+│   └── src/main/java/
+│       └── com/example/exam/
+│           ├── controller/  # 控制器
+│           ├── service/     # 服务层
+│           ├── mapper/      # 数据访问层
+│           ├── entity/      # 实体类
+│           ├── dto/         # 数据传输对象
+│           ├── config/      # 配置类
+│           └── common/      # 公共模块
+├── frontend/                # 前端代码
+│   └── src/
+│       ├── views/          # 页面
+│       ├── components/     # 组件
+│       ├── stores/         # 状态管理
+│       ├── router/         # 路由
+│       ├── api/           # API接口
+│       └── utils/         # 工具函数
+├── database/              # 数据库脚本
+├── docs/                  # 文档
+├── start-all.bat         # 一键启动
+├── start-backend.bat     # 后端启动
+├── start-frontend.bat    # 前端启动
+└── MVP_QUICK_START.md    # 快速指南
 ```
 
 ---
 
-## 🎯 功能模块
+## 📝 配置说明
 
-### 1. 用户管理模块 ✅
+### 后端配置
 
-- ✅ 用户注册、登录
-- ✅ 角色权限管理（RBAC）
-- ✅ 组织架构管理
-- ✅ 审核流程
+`backend/src/main/resources/application.yml`
 
-### 2. 题库管理模块 ✅
-
-- ✅ 8种题型支持
-- ✅ 知识点3级分类
-- ✅ 题目批量导入/导出
-- ✅ 题目审核流程
-- ✅ 题库数据隔离
-
-### 3. 试卷管理模块 ✅
-
-- ✅ 固定组卷
-- ⏳ 随机组卷（开发中）
-- ✅ 试卷审核
-- ✅ 试卷版本管理
-- ✅ 补考设置
-
-### 4. 考试管理模块 ✅
-
-- ✅ 考试发布、定时发布
-- ⏳ 防作弊功能（开发中）
-  - 切屏检测
-  - 单设备登录
-  - 主观题防抄袭
-- ✅ 考试监控
-- ✅ 考试会话管理
-
-### 5. 成绩管理模块 ⏳
-
-- ⏳ 客观题自动判分（开发中）
-- ⏳ 主观题人工批改（开发中）
-- ⏳ 成绩统计分析（开发中）
-- ⏳ 成绩导出
-
----
-
-## 📊 开发进度
-
-### 总体进度：50% 
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ 数据库设计        100%
-✅ 项目配置          100%
-✅ 公共模块          100%
-✅ 实体类层          100%
-✅ Mapper层          100%
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏳ Service层          0%
-⏳ Controller层       0%
-⏳ 前端改造           0%
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 总进度            50%
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/exam_system
+    username: root
+    password: 你的密码
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
 ```
 
-### 已完成模块
+### 前端配置
 
-- ✅ 数据库设计（19张表，1100行SQL）
-- ✅ 枚举类（4个，370行代码）
-- ✅ 实体类（19个，2315行代码）
-- ✅ Mapper接口（19个，2100行代码）
-- ✅ MyBatis配置（2个，100行代码）
+`frontend/.env.development`
 
-**累计代码**: 44个文件，4,885行高质量代码
-
-### 下一步计划
-
-- [ ] 创建Mapper XML文件（4个核心XML）
-- [ ] 开发Service层（19个Service）
-- [ ] 实现自动判分功能
-- [ ] 开发Controller层（19个Controller）
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
 
 ---
 
-## 🛠️ 技术栈
+## 🎬 演示视频
 
-### 后端技术
-
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Spring Boot | 3.2.3 | 核心框架 |
-| Spring Security | 6.2.2 | 安全框架 |
-| MyBatis Plus | 3.5.5 | ORM框架 |
-| MySQL | 8.0.35+ | 数据库 |
-| Redis | 7.0.15 | 缓存 |
-| JWT | 0.12.3 | 认证 |
-| Lombok | 1.18.30 | 简化代码 |
-| Hutool | 5.8.25 | 工具库 |
-| EasyExcel | 3.3.3 | Excel处理 |
-| Quartz | 2.3.2 | 定时任务 |
-
-### 前端技术
-
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Vue | 3.4.21 | 核心框架 |
-| Element Plus | 2.6.1 | UI组件库 |
-| Vite | 5.1.4 | 构建工具 |
-| Axios | 1.6.7 | HTTP请求 |
-| Pinia | 2.1.7 | 状态管理 |
-| ECharts | 5.5.0 | 图表库 |
-| Quill | 2.0.0 | 富文本编辑器 |
+[待添加]
 
 ---
 
-## 📚 文档
+## 📖 详细文档
 
-- [📖 改造指南](docs/learn/EXAM_SYSTEM_MIGRATION_GUIDE.md) - 详细的改造方案和技术选型
-- [📊 进度报告](docs/learn/MIGRATION_PROGRESS_REPORT.md) - 实时更新的改造进度
-- [🚀 快速开始](docs/learn/QUICK_START.md) - 快速启动指南
-- [💾 数据完整性指南](database/DATA_INTEGRITY_GUIDE.md) - 数据库设计说明
-- [📝 需求文档](考试系统需求文档（V1.0%20-%20完整版）.md) - 完整业务需求
-
----
-
-## 🤝 贡献指南
-
-欢迎贡献代码！请遵循以下步骤：
-
-1. Fork本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建Pull Request
-
-### 代码规范
-
-- **Java**: 遵循阿里巴巴Java开发手册
-- **JavaScript**: 遵循ESLint规范
-- **Git提交**: 使用Conventional Commits规范
+- [快速启动指南](MVP_QUICK_START.md)
+- [交付清单](docs/MVP_DELIVERY_CHECKLIST.md)
+- [Day 1 后端权限报告](docs/DAY1_COMPLETION_SUMMARY.md)
+- [Day 2 前端权限报告](docs/DAY2_FRONTEND_PERMISSION_REPORT.md)
 
 ---
 
-## 📝 更新日志
+## 🐛 问题反馈
 
-### [2.0.0-SNAPSHOT] - 2025-11-06
+如遇到问题，请检查：
 
-#### 新增
-- ✅ 完整的数据库设计（19张表）
-- ✅ 8种题型枚举类
-- ✅ 19个实体类（支持逻辑删除、自动填充）
-- ✅ 19个Mapper接口（支持复杂查询）
-- ✅ MyBatis Plus配置（分页、乐观锁、防攻击）
-
-#### 改进
-- ✅ JWT版本升级至0.12.3
-- ✅ 项目名称改为exam-system
-- ✅ 添加EasyExcel、Quartz依赖
+1. 数据库是否正常运行
+2. Redis是否正常运行
+3. 端口是否被占用（8080, 3000）
+4. 配置文件是否正确
 
 ---
 
-## 📞 联系方式
+## 📄 开源协议
 
-- **项目负责人**: Exam System Team
-- **技术支持**: GitHub Issues
-- **文档维护**: 实时更新
+MIT License
 
 ---
 
-## 📄 许可证
+## 👥 开发团队
 
-本项目采用 [MIT](LICENSE) 许可证。
-
----
-
-## 🙏 致谢
-
-感谢所有为本项目做出贡献的开发者！
+- 后端开发：[Your Name]
+- 前端开发：[Your Name]
+- 数据库设计：[Your Name]
+- 权限系统：AI Agent
 
 ---
 
-**最后更新**: 2025-11-06 | **版本**: V2.0.0-SNAPSHOT | **进度**: 50% | **状态**: 🟢 进行中
+## 🎉 特别鸣谢
+
+感谢所有开源项目的贡献者！
+
+---
+
+**准备就绪，周一交付！** 🚀
+
+最后更新：2025-12-20
 

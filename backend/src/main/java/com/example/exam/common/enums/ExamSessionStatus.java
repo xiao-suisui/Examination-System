@@ -64,15 +64,20 @@ public enum ExamSessionStatus {
      * 根据编码获取状态枚举
      *
      * @param code 状态编码
-     * @return 状态枚举，未找到则返回null
+     * @return 状态枚举
+     * @throws IllegalArgumentException 如果编码无效
      */
-    public static ExamSessionStatus fromCode(int code) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public static ExamSessionStatus of(Integer code) {
+        if (code == null) {
+            return null;
+        }
         for (ExamSessionStatus status : values()) {
             if (status.getCode() == code) {
                 return status;
             }
         }
-        return null;
+        throw new IllegalArgumentException("无效的考试会话状态编码: " + code);
     }
 
     /**

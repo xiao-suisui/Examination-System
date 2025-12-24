@@ -71,10 +71,16 @@
           <template #header>
             <div class="card-header">
               <span>题目列表</span>
-              <el-button type="primary" size="small" @click="handleManageQuestions">
-                <el-icon><Edit /></el-icon>
-                管理题目
-              </el-button>
+              <div>
+                <el-button type="primary" size="small" @click="showQuestionSelector">
+                  <el-icon><Plus /></el-icon>
+                  添加题目
+                </el-button>
+                <el-button type="default" size="small" @click="handleManageQuestions" style="margin-left: 8px">
+                  <el-icon><Edit /></el-icon>
+                  管理题目
+                </el-button>
+              </div>
             </div>
           </template>
 
@@ -200,6 +206,13 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 题目选择器 -->
+    <QuestionSelector
+      v-model="questionSelectorVisible"
+      :existing-questions="paper.questions || []"
+      @confirm="handleQuestionsSelected"
+    />
   </div>
 </template>
 
@@ -207,8 +220,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Edit } from '@element-plus/icons-vue'
+import { ArrowLeft, Edit, Plus } from '@element-plus/icons-vue'
 import paperApi from '@/api/paper'
+import QuestionSelector from '@/components/QuestionSelector.vue'
 import {
   QUESTION_TYPE,
   getPaperTypeName,
@@ -228,6 +242,9 @@ const loading = ref(false)
 const paper = ref({})
 const statistics = ref({})
 const activeCollapse = ref([QUESTION_TYPE.SINGLE_CHOICE, QUESTION_TYPE.MULTIPLE_CHOICE])
+
+// 题目选择器状态
+const questionSelectorVisible = ref(false)
 
 // 按题型分组的题目
 const questionsByType = computed(() => {
@@ -310,12 +327,13 @@ const goBack = () => {
 
 // 预览
 const handlePreview = () => {
-  router.push(`/paper/preview/${paper.value.paperId}`)
+  router.push({ name: 'PaperPreview', params: { id: paper.value.paperId } })
 }
 
 // 编辑
 const handleEdit = () => {
-  router.push(`/admin/paper/edit/${paper.value.paperId}`)
+  // 跳转到试卷列表页，并传递编辑参数
+  router.push({ name: 'Paper', query: { edit: paper.value.paperId } })
 }
 
 // 删除
@@ -339,14 +357,54 @@ const handleDelete = async () => {
   }
 }
 
-// 管理题目
+// 显示题目选择器
+const showQuestionSelector = () => {
+  questionSelectorVisible.value = true
+}
+
+// 处理题目选择确认
+const handleQuestionsSelected = async (selectedQuestions) => {
+  try {
+    // 过滤出新添加的题目（排除已存在的）
+    const existingIds = paper.value.questions ? paper.value.questions.map(q => q.questionId) : []
+    const newQuestions = selectedQuestions.filter(
+      q => !existingIds.includes(q.questionId)
+    )
+
+    if (newQuestions.length === 0) {
+      ElMessage.info('没有新增题目')
+      return
+    }
+
+    // 提取新题目的ID
+    const newQuestionIds = newQuestions.map(q => q.questionId)
+
+    // 调用API添加题目
+    const res = await paperApi.addQuestions(paper.value.paperId, newQuestionIds)
+
+    if (res.code === 200) {
+      ElMessage.success(`成功添加 ${newQuestions.length} 道题目`)
+      // 重新加载试卷详情
+      await loadPaperDetail()
+    } else {
+      ElMessage.error(res.message || '添加题目失败')
+    }
+  } catch (error) {
+    console.error('添加题目失败:', error)
+    ElMessage.error('添加题目失败')
+  }
+}
+
+
+// 管理题目（跳转到试卷编辑页面的题目标签）
 const handleManageQuestions = () => {
-  router.push(`/admin/paper/${paper.value.paperId}/questions`)
+  // 跳转到试卷列表页，并传递编辑参数和标签参数
+  router.push({ name: 'Paper', query: { edit: paper.value.paperId, tab: 'questions' } })
 }
 
 // 查看题目
 const viewQuestion = (questionId) => {
-  router.push(`/admin/question/${questionId}`)
+  router.push({ name: 'QuestionDetail', params: { id: questionId } })
 }
 
 

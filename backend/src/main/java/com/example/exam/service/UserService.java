@@ -33,7 +33,7 @@ public interface UserService extends IService<SysUser> {
      * @param status   状态（可选）
      * @return 用户DTO分页数据
      */
-    IPage<UserDTO> pageUserDTO(Page<?> page, String username, String realName, Integer status);
+    IPage<UserDTO> pageUserDTO(Page<?> page, String username, String realName, com.example.exam.common.enums.UserStatus status);
 
     /**
      * 根据用户名查询用户
@@ -99,5 +99,13 @@ public interface UserService extends IService<SysUser> {
     default boolean updatePassword(Long userId, String oldPassword, String newPassword) {
         return changePassword(userId, oldPassword, newPassword);
     }
+
+    /**
+     * 根据角色ID获取角色信息
+     *
+     * @param roleId 角色ID
+     * @return 角色信息
+     */
+    com.example.exam.entity.system.SysRole getRoleById(Long roleId);
 }
 

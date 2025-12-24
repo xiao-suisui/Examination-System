@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.exam.common.enums.AuditStatus;
 import com.example.exam.common.enums.PaperType;
+import com.example.exam.dto.PaperDTO;
 import com.example.exam.entity.paper.Paper;
 import com.example.exam.entity.paper.PaperQuestion;
 import com.example.exam.entity.paper.PaperRule;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 试卷Service实现类
@@ -40,92 +42,80 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     private final QuestionMapper questionMapper;
     private final com.example.exam.mapper.paper.PaperRuleMapper paperRuleMapper;
     private final com.example.exam.mapper.exam.ExamMapper examMapper;
+    private final com.example.exam.service.QuestionService questionService;
 
     @Override
-    public IPage<Paper> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, AuditStatus auditStatus) {
+    public List<PaperDTO> listPapers(String keyword, Long bankId, AuditStatus auditStatus) {
+        LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(keyword != null && !keyword.isEmpty(), Paper::getPaperName, keyword)
+               .eq(auditStatus != null, Paper::getAuditStatus, auditStatus)
+               .orderByDesc(Paper::getCreateTime);
+
+        List<Paper> papers = this.list(wrapper);
+
+        // 转换为DTO
+        return papers.stream()
+            .map(this::convertToPaperDTO)
+            .filter(dto -> bankId == null || (dto.getBankIds() != null && dto.getBankIds().contains(bankId.toString())))
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, AuditStatus auditStatus) {
         LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(keyword != null && !keyword.isEmpty(), Paper::getPaperName, keyword)
                .eq(paperType != null, Paper::getPaperType, paperType)
                .eq(auditStatus != null, Paper::getAuditStatus, auditStatus)
                .orderByDesc(Paper::getCreateTime);
 
-        IPage<Paper> result = this.page(page, wrapper);
+        IPage<Paper> paperPage = this.page(page, wrapper);
 
-        // 填充每个试卷的扩展信息
-        result.getRecords().forEach(paper -> enrichPaperInfo(paper, bankId));
+        // 转换为DTO
+        IPage<PaperDTO> dtoPage = new Page<>();
+        org.springframework.beans.BeanUtils.copyProperties(paperPage, dtoPage, "records");
 
-        return result;
+        List<PaperDTO> dtoList = paperPage.getRecords().stream()
+            .map(this::convertToPaperDTO)
+            .filter(dto -> bankId == null || (dto.getBankIds() != null && dto.getBankIds().contains(bankId.toString())))
+            .collect(java.util.stream.Collectors.toList());
+
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
     }
 
     /**
-     * 填充试卷的扩展信息（题目数量、题库名称、状态）
-     *
-     * @param paper 试卷对象
-     * @param filterBankId 过滤的题库ID（如果不为null，只返回该题库的试卷）
+     * 将Paper实体转换为PaperDTO
      */
-    private void enrichPaperInfo(Paper paper, Long filterBankId) {
-        try {
-            Long paperBankId = null;
-            int questionCount = 0;
+    private com.example.exam.dto.PaperDTO convertToPaperDTO(Paper paper) {
+        com.example.exam.dto.PaperDTO dto = new com.example.exam.dto.PaperDTO();
+        org.springframework.beans.BeanUtils.copyProperties(paper, dto);
 
-            // 1. 优先从PaperRule表查询（自动组卷/随机组卷）
-            LambdaQueryWrapper<PaperRule> ruleWrapper = new LambdaQueryWrapper<>();
-            ruleWrapper.eq(PaperRule::getPaperId, paper.getPaperId());
-            List<PaperRule> rules = paperRuleMapper.selectList(ruleWrapper);
+        // 统计题目数量
+        Long questionCount = paperQuestionMapper.selectCount(
+            new LambdaQueryWrapper<PaperQuestion>()
+                .eq(PaperQuestion::getPaperId, paper.getPaperId())
+        );
+        dto.setQuestionCount(questionCount != null ? questionCount.intValue() : 0);
 
-            if (rules != null && !rules.isEmpty()) {
-                // 获取第一个规则的题库ID
-                paperBankId = rules.get(0).getBankId();
-                // 累加所有规则的题目数量
-                questionCount = rules.stream()
-                    .mapToInt(rule -> rule.getTotalNum() != null ? rule.getTotalNum() : 0)
-                    .sum();
-            }
+        // 查询题库信息（不使用select，查询完整对象）
+        List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(
+            new LambdaQueryWrapper<PaperQuestion>()
+                .eq(PaperQuestion::getPaperId, paper.getPaperId())
+        );
 
-            // 2. 如果没有规则，从PaperQuestion表查询（手动组卷）
-            if (questionCount == 0) {
-                LambdaQueryWrapper<PaperQuestion> pqWrapper = new LambdaQueryWrapper<>();
-                pqWrapper.eq(PaperQuestion::getPaperId, paper.getPaperId());
-                Long count = paperQuestionMapper.selectCount(pqWrapper);
-                questionCount = count != null ? count.intValue() : 0;
+        if (!paperQuestions.isEmpty()) {
+            String bankIds = paperQuestions.stream()
+                .filter(pq -> pq != null && pq.getBankId() != null) // 过滤null值
+                .map(pq -> String.valueOf(pq.getBankId()))
+                .distinct()
+                .collect(java.util.stream.Collectors.joining(","));
+            dto.setBankIds(bankIds.isEmpty() ? null : bankIds);
 
-                // 查询题库ID（从第一道题目获取）
-                if (questionCount > 0) {
-                    pqWrapper.last("LIMIT 1");
-                    PaperQuestion pq = paperQuestionMapper.selectOne(pqWrapper);
-                    if (pq != null) {
-                        Question question = questionMapper.selectById(pq.getQuestionId());
-                        if (question != null) {
-                            paperBankId = question.getBankId();
-                        }
-                    }
-                }
-            }
-
-            // 如果指定了过滤题库ID，且当前试卷不属于该题库，跳过
-            if (filterBankId != null && paperBankId != null && !filterBankId.equals(paperBankId)) {
-                return;
-            }
-
-            // 3. 设置题目数量
-            paper.setQuestionCount(questionCount);
-
-            // 4. 查询并设置题库名称
-            if (paperBankId != null) {
-                String bankName = paperMapper.selectBankNameById(paperBankId);
-                paper.setBankName(bankName != null ? bankName : "");
-                paper.setBankId(paperBankId);
-            } else {
-                paper.setBankName("");
-                paper.setBankId(null);
-            }
-
-        } catch (Exception e) {
-            log.warn("填充试卷信息失败，paperId: {}", paper.getPaperId(), e);
-            // 设置默认值，避免前端显示异常
-            paper.setQuestionCount(0);
-            paper.setBankName("");
+            // 获取题库名称（这里可以调用QuestionBankService）
+            // dto.setBankNames(...);
         }
+
+        return dto;
     }
 
     @Override
@@ -148,6 +138,45 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     }
 
     @Override
+    public PaperDTO getPaperDTOWithQuestions(Long paperId) {
+        Paper paper = this.getById(paperId);
+        if (paper == null) {
+            return null;
+        }
+
+        // 转换为DTO
+        com.example.exam.dto.PaperDTO dto = new com.example.exam.dto.PaperDTO();
+        org.springframework.beans.BeanUtils.copyProperties(paper, dto);
+
+        // 查询试卷的所有题目
+        LambdaQueryWrapper<PaperQuestion> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PaperQuestion::getPaperId, paperId)
+               .orderByAsc(PaperQuestion::getSortOrder);
+        List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(wrapper);
+
+        if (!paperQuestions.isEmpty()) {
+            // 提取题目ID列表
+            List<Long> questionIds = paperQuestions.stream()
+                .filter(pq -> pq != null && pq.getQuestionId() != null)
+                .map(PaperQuestion::getQuestionId)
+                .toList();
+
+            if (!questionIds.isEmpty()) {
+                // 批量查询题目详情（含选项）
+                List<com.example.exam.dto.QuestionDTO> questions = questionIds.stream()
+                    .map(questionService::getQuestionDTOById)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+                dto.setQuestions(questions);
+                dto.setQuestionCount(questions.size());
+            }
+        }
+
+        return dto;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long autoGeneratePaper(Paper paper, PaperRule[] rules) {
         try {
@@ -162,8 +191,14 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
             int questionOrder = 1;
             BigDecimal totalScore = BigDecimal.ZERO;
 
-            // 2. 根据规则随机抽取题目
+            // 2. 保存组卷规则并根据规则随机抽取题目
             for (PaperRule rule : rules) {
+                // 2.1 保存规则到数据库
+                rule.setPaperId(paperId);
+                paperRuleMapper.insert(rule);
+                Long ruleId = rule.getRuleId();
+
+                // 2.2 根据规则查询题目
                 LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(rule.getBankId() != null, Question::getBankId, rule.getBankId())
                        .eq(rule.getQuestionType() != null, Question::getQuestionType, rule.getQuestionType())
@@ -176,20 +211,22 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
                     log.warn("题目数量不足，需要{}道，实际只有{}道", rule.getTotalNum(), questions.size());
                 }
 
-                // 3. 添加题目到试卷
+                // 2.3 添加题目到试卷
                 for (Question question : questions) {
                     PaperQuestion paperQuestion = new PaperQuestion();
                     paperQuestion.setPaperId(paperId);
                     paperQuestion.setQuestionId(question.getQuestionId());
+                    paperQuestion.setBankId(question.getBankId());
                     paperQuestion.setQuestionScore(rule.getSingleScore());
                     paperQuestion.setSortOrder(questionOrder++);
+                    paperQuestion.setRuleId(ruleId);
                     paperQuestionMapper.insert(paperQuestion);
 
                     totalScore = totalScore.add(rule.getSingleScore());
                 }
             }
 
-            // 4. 更新试卷的总分（paper表没有questionCount字段）
+            // 3. 更新试卷的总分
             paper.setTotalScore(totalScore);
             this.updateById(paper);
 
@@ -228,6 +265,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
                     PaperQuestion paperQuestion = new PaperQuestion();
                     paperQuestion.setPaperId(paperId);
                     paperQuestion.setQuestionId(questionId);
+                    paperQuestion.setBankId(question.getBankId()); // ✅ 记录题库来源
                     paperQuestion.setQuestionScore(question.getDefaultScore());
                     paperQuestion.setSortOrder(nextOrder++);
                     paperQuestionMapper.insert(paperQuestion);
@@ -419,7 +457,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
 
                 // 统计难度
                 if (q.getDifficulty() != null) {
-                    switch (q.getDifficulty().getType()) {
+                    switch (q.getDifficulty().getCode()) {
                         case 1: easyCount++; break;
                         case 2: mediumCount++; break;
                         case 3: hardCount++; break;

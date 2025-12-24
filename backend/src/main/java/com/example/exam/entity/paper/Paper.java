@@ -39,6 +39,12 @@ public class Paper implements Serializable {
     @TableId(value = "paper_id", type = IdType.AUTO)
     private Long paperId;
 
+   /**
+     * 题库ID
+     */
+   @TableField("bank_id")
+   private Long bankId;
+
     /**
      * 试卷名称
      */
@@ -171,25 +177,5 @@ public class Paper implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
-
-    // ==================== 非数据库字段（用于前端显示） ====================
-
-    /**
-     * 题目数量（非数据库字段，从PaperRule或PaperQuestion统计）
-     */
-    @TableField(exist = false)
-    private Integer questionCount;
-
-    /**
-     * 题库名称（非数据库字段，关联查询）
-     */
-    @TableField(exist = false)
-    private String bankName;
-
-    /**
-     * 题库ID（非数据库字段，从PaperRule或题目中获取）
-     */
-    @TableField(exist = false)
-    private Long bankId;
 }
 

@@ -10,8 +10,8 @@ export default {
    */
   page(params) {
     return request({
-      url: '/api/question-bank/page',
-      method: 'get',
+      url: `/question-bank/page`,
+      method: `get`,
       params
     })
   },
@@ -21,8 +21,8 @@ export default {
    */
   list() {
     return request({
-      url: '/api/question-bank/list',
-      method: 'get'
+      url: `/question-bank/list`,
+      method: `get`
     })
   },
 
@@ -31,8 +31,8 @@ export default {
    */
   getById(id) {
     return request({
-      url: `/api/question-bank/${id}`,
-      method: 'get'
+      url: `/question-bank/${id}`,
+      method: `get`
     })
   },
 
@@ -41,8 +41,8 @@ export default {
    */
   create(data) {
     return request({
-      url: '/api/question-bank',
-      method: 'post',
+      url: `/question-bank`,
+      method: `post`,
       data
     })
   },
@@ -52,8 +52,8 @@ export default {
    */
   update(id, data) {
     return request({
-      url: `/api/question-bank/${id}`,
-      method: 'put',
+      url: `/question-bank/${id}`,
+      method: `put`,
       data
     })
   },
@@ -63,8 +63,8 @@ export default {
    */
   deleteById(id) {
     return request({
-      url: `/api/question-bank/${id}`,
-      method: 'delete'
+      url: `/question-bank/${id}`,
+      method: `delete`
     })
   },
 
@@ -73,8 +73,29 @@ export default {
    */
   getStatistics(id) {
     return request({
-      url: `/api/question-bank/${id}/statistics`,
-      method: 'get'
+      url: `/question-bank/${id}/statistics`,
+      method: `get`
+    })
+  },
+
+  /**
+   * 批量添加题目到题库
+   */
+  addQuestions(bankId, questionIds) {
+    return request({
+      url: `/question-bank/${bankId}/questions`,
+      method: `post`,
+      data: { questionIds }
+    })
+  },
+
+  /**
+   * 从题库移除题目
+   */
+  removeQuestion(bankId, questionId) {
+    return request({
+      url: `/question-bank/${bankId}/questions/${questionId}`,
+      method: `delete`
     })
   }
 }

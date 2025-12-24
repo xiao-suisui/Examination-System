@@ -13,8 +13,8 @@ export default {
    */
   login(data) {
     return request({
-      url: '/api/auth/login',
-      method: 'post',
+      url: `/auth/login`,
+      method: `post`,
       data: data  // 使用JSON格式，不是query参数
     })
   },
@@ -25,8 +25,8 @@ export default {
    */
   logout() {
     return request({
-      url: '/api/auth/logout',
-      method: 'post'
+      url: `/auth/logout`,
+      method: `post`
     })
   },
 
@@ -37,8 +37,8 @@ export default {
    */
   refresh(data) {
     return request({
-      url: '/api/auth/refresh',
-      method: 'post',
+      url: `/auth/refresh`,
+      method: `post`,
       params: data
     })
   },
@@ -49,9 +49,8 @@ export default {
    */
   getCurrentUser() {
     return request({
-      url: '/api/auth/current-user',
-      method: 'get'
+      url: `/auth/current-user`,
+      method: `get`
     })
   }
 }
-

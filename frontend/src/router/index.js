@@ -4,7 +4,7 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
-import routes from './routes'
+import routes from './routes-new' // 使用重构后的路由配置
 import { setupBeforeEach, setupAfterEach, setupOnError } from './guards'
 
 // 创建路由实例

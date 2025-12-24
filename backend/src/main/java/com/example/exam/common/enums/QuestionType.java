@@ -87,16 +87,22 @@ public enum QuestionType {
      * 根据编码获取题型枚举
      *
      * @param code 题型编码
-     * @return 题型枚举，未找到则返回null
+     * @return 题型枚举
+     * @throws IllegalArgumentException 如果编码无效
      */
-    public static QuestionType fromCode(int code) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public static QuestionType of(Integer code) {
+        if (code == null) {
+            return null;
+        }
         for (QuestionType type : values()) {
             if (type.getCode() == code) {
                 return type;
             }
         }
-        return null;
+        throw new IllegalArgumentException("无效的题型编码: " + code);
     }
+
 
     /**
      * 是否是选择题（单选/多选/不定项/判断）

@@ -36,6 +36,12 @@ public class QuestionBank implements Serializable {
     private Long bankId;
 
     /**
+     * 所属科目ID
+     */
+    @TableField("subject_id")
+    private Long subjectId;
+
+    /**
      * 题库名称
      */
     @TableField("bank_name")
@@ -107,5 +113,6 @@ public class QuestionBank implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
-}
+
+    }
 

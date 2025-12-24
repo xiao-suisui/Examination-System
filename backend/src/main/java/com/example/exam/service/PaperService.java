@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.exam.common.enums.PaperType;
+import com.example.exam.dto.PaperDTO;
 import com.example.exam.entity.paper.Paper;
 import com.example.exam.entity.paper.PaperRule;
 
@@ -17,19 +18,33 @@ import com.example.exam.entity.paper.PaperRule;
 public interface PaperService extends IService<Paper> {
 
     /**
-     * 分页查询试卷
+     * 查询试卷列表（不分页）
+     * @param keyword 试卷名称关键词
+     * @param bankId 题库ID
+     * @param auditStatus 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
+     * @return 试卷DTO列表
+     */
+    java.util.List<PaperDTO> listPapers(String keyword, Long bankId, com.example.exam.common.enums.AuditStatus auditStatus);
+
+    /**
+     * 分页查询试卷（返回DTO）
      * @param page 分页对象
      * @param keyword 试卷名称关键词
      * @param bankId 题库ID
      * @param paperType 组卷方式：1-手动组卷，2-自动组卷，3-随机组卷
      * @param auditStatus 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
      */
-    IPage<Paper> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, com.example.exam.common.enums.AuditStatus auditStatus);
+    IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, com.example.exam.common.enums.AuditStatus auditStatus);
 
     /**
-     * 获取试卷详情（含题目）
+     * 查询试卷详情（含题目）
      */
     Paper getPaperWithQuestions(Long paperId);
+
+    /**
+     * 查询试卷DTO详情（含题目和选项）
+     */
+    com.example.exam.dto.PaperDTO getPaperDTOWithQuestions(Long paperId);
 
     /**
      * 自动组卷

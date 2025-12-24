@@ -13,8 +13,8 @@ export default {
    */
   getExamStatistics(examId) {
     return request({
-      url: `/api/statistics/exam/${examId}`,
-      method: 'get'
+      url: `/statistics/exam/${examId}`,
+      method: `get`
     })
   },
 
@@ -25,8 +25,8 @@ export default {
    */
   getUserStatistics(userId) {
     return request({
-      url: `/api/statistics/user/${userId}`,
-      method: 'get'
+      url: `/statistics/user/${userId}`,
+      method: `get`
     })
   },
 
@@ -37,8 +37,8 @@ export default {
    */
   getQuestionStatistics(questionId) {
     return request({
-      url: `/api/statistics/question/${questionId}`,
-      method: 'get'
+      url: `/statistics/question/${questionId}`,
+      method: `get`
     })
   },
 
@@ -49,8 +49,8 @@ export default {
    */
   getBankStatistics(bankId) {
     return request({
-      url: `/api/statistics/bank/${bankId}`,
-      method: 'get'
+      url: `/statistics/bank/${bankId}`,
+      method: `get`
     })
   },
 
@@ -61,8 +61,8 @@ export default {
    */
   getScoreDistribution(examId) {
     return request({
-      url: `/api/statistics/exam/${examId}/score-distribution`,
-      method: 'get'
+      url: `/statistics/exam/${examId}/score-distribution`,
+      method: `get`
     })
   },
 
@@ -73,8 +73,8 @@ export default {
    */
   getAnswerRate(examId) {
     return request({
-      url: `/api/statistics/exam/${examId}/answer-rate`,
-      method: 'get'
+      url: `/statistics/exam/${examId}/answer-rate`,
+      method: `get`
     })
   },
 
@@ -85,8 +85,8 @@ export default {
    */
   getWrongQuestions(userId) {
     return request({
-      url: `/api/statistics/user/${userId}/wrong-questions`,
-      method: 'get'
+      url: `/statistics/user/${userId}/wrong-questions`,
+      method: `get`
     })
   },
 
@@ -97,8 +97,33 @@ export default {
    */
   getAbilityAnalysis(userId) {
     return request({
-      url: `/api/statistics/user/${userId}/ability`,
-      method: 'get'
+      url: `/statistics/user/${userId}/ability`,
+      method: `get`
+    })
+  },
+
+  /**
+   * 获取首页仪表盘数据
+   * @param {number} userId 用户ID
+   * @param {string} role 用户角色
+   * @returns {Promise}
+   */
+  getDashboard(userId, role) {
+    return request({
+      url: `/statistics/dashboard`,
+      method: `get`,
+      params: { userId, role }
+    })
+  },
+
+  /**
+   * 获取系统统计概览
+   * @returns {Promise}
+   */
+  getSystemOverview() {
+    return request({
+      url: `/statistics/overview`,
+      method: `get`
     })
   }
 }

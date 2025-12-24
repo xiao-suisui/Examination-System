@@ -38,6 +38,12 @@ public class Exam implements Serializable {
     private Long examId;
 
     /**
+     * 所属科目ID
+     */
+    @TableField("subject_id")
+    private Long subjectId;
+
+    /**
      * 考试名称
      */
     @TableField("exam_name")
@@ -164,9 +170,9 @@ public class Exam implements Serializable {
     private Long orgId;
 
     /**
-     * 创建人ID
+     * 创建人ID（自动填充）
      */
-    @TableField("create_user_id")
+    @TableField(value = "create_user_id", fill = FieldFill.INSERT)
     private Long createUserId;
 
     /**

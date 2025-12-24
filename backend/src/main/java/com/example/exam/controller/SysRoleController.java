@@ -3,6 +3,7 @@ package com.example.exam.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.exam.annotation.OperationLog;
+import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.result.Result;
 import com.example.exam.dto.SysRoleDTO;
 import com.example.exam.entity.system.SysRole;
@@ -36,6 +37,7 @@ public class SysRoleController {
     private final SysRoleService roleService;
 
     @Operation(summary = "分页查询角色", description = "分页查询角色列表")
+    @RequirePermission(value = "system:role:view", desc = "查看角色")
     @OperationLog(module = "角色管理", type = "查询", description = "分页查询角色", recordParams = false)
     @GetMapping("/page")
     public Result<IPage<SysRole>> page(
@@ -50,6 +52,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "获取所有启用的角色", description = "获取所有启用状态的角色")
+    @RequirePermission(value = "system:role:view", desc = "查看角色")
     @GetMapping("/enabled")
     public Result<List<SysRole>> getEnabledRoles() {
         List<SysRole> roles = roleService.getEnabledRoles();
@@ -57,6 +60,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "查询角色详情", description = "根据ID查询角色详情")
+    @RequirePermission(value = "system:role:view", desc = "查看角色")
     @GetMapping("/{id}")
     public Result<SysRoleDTO> getById(
             @Parameter(description = "角色ID", required = true) @PathVariable Long id) {
@@ -76,6 +80,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "创建角色", description = "创建新角色")
+    @RequirePermission(value = "system:role:create", desc = "创建角色")
     @OperationLog(module = "角色管理", type = "创建", description = "创建角色")
     @PostMapping
     public Result<Void> create(
@@ -112,6 +117,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "更新角色", description = "更新角色信息")
+    @RequirePermission(value = "system:role:update", desc = "更新角色")
     @OperationLog(module = "角色管理", type = "更新", description = "更新角色")
     @PutMapping("/{id}")
     public Result<Void> update(
@@ -151,6 +157,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "删除角色", description = "删除角色（逻辑删除）")
+    @RequirePermission(value = "system:role:delete", desc = "删除角色")
     @OperationLog(module = "角色管理", type = "删除", description = "删除角色")
     @DeleteMapping("/{id}")
     public Result<Void> delete(
@@ -176,6 +183,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "更新角色状态", description = "启用或禁用角色")
+    @RequirePermission(value = "system:role:update", desc = "更新角色")
     @OperationLog(module = "角色管理", type = "更新", description = "更新角色状态")
     @PutMapping("/{id}/status")
     public Result<Void> updateStatus(
@@ -193,6 +201,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "为角色分配权限", description = "为指定角色分配权限")
+    @RequirePermission(value = "system:role:update", desc = "更新角色")
     @OperationLog(module = "角色管理", type = "更新", description = "分配角色权限")
     @PostMapping("/{id}/permissions")
     public Result<Void> assignPermissions(

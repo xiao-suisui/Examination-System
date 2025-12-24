@@ -2,6 +2,7 @@ package com.example.exam.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.result.Result;
 import com.example.exam.entity.exam.ExamAnswer;
 import com.example.exam.service.GradingService;
@@ -29,6 +30,7 @@ public class GradingController {
     private final GradingService gradingService;
 
     @Operation(summary = "查询待阅卷答题", description = "分页查询需要人工阅卷的主观题答案")
+    @RequirePermission(value = "grading:view", desc = "查看批改任务")
     @GetMapping("/pending")
     public Result<IPage<ExamAnswer>> getPending(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
@@ -43,6 +45,7 @@ public class GradingController {
     }
 
     @Operation(summary = "阅卷", description = "对主观题进行人工评分和批注")
+    @RequirePermission(value = "grading:manage", desc = "批改试卷")
     @PostMapping("/grade")
     public Result<Void> grade(
             @Parameter(description = "答案ID", required = true) @RequestParam Long answerId,
@@ -55,6 +58,7 @@ public class GradingController {
     }
 
     @Operation(summary = "批量阅卷", description = "批量对多个答案进行评分")
+    @RequirePermission(value = "grading:manage", desc = "批改试卷")
     @PostMapping("/batch-grade")
     public Result<Object> batchGrade(
             @Parameter(description = "批量阅卷数据", required = true) @RequestBody List<Object> gradeData) {
@@ -63,6 +67,7 @@ public class GradingController {
     }
 
     @Operation(summary = "查询我的阅卷任务", description = "查询分配给我的阅卷任务")
+    @RequirePermission(value = "grading:view", desc = "查看批改任务")
     @GetMapping("/my-tasks")
     public Result<List<Object>> myTasks(
             @Parameter(description = "教师ID", required = true) @RequestParam Long teacherId) {
@@ -71,6 +76,7 @@ public class GradingController {
     }
 
     @Operation(summary = "分配阅卷任务", description = "将主观题答案分配给指定教师阅卷")
+    @RequirePermission(value = "grading:manage", desc = "管理批改任务")
     @PostMapping("/assign")
     public Result<Void> assignTask(
             @Parameter(description = "考试ID", required = true) @RequestParam Long examId,
@@ -81,6 +87,7 @@ public class GradingController {
     }
 
     @Operation(summary = "阅卷进度", description = "查询考试的阅卷进度统计")
+    @RequirePermission(value = "grading:view", desc = "查看批改任务")
     @GetMapping("/progress/{examId}")
     public Result<Object> progress(
             @Parameter(description = "考试ID", required = true) @PathVariable Long examId) {
@@ -89,6 +96,7 @@ public class GradingController {
     }
 
     @Operation(summary = "成绩复核", description = "申请成绩复核")
+    @RequirePermission(value = "grading:review", desc = "申请复核")
     @PostMapping("/review-request")
     public Result<Void> reviewRequest(
             @Parameter(description = "会话ID", required = true) @RequestParam Long sessionId,
@@ -99,6 +107,7 @@ public class GradingController {
     }
 
     @Operation(summary = "处理复核申请", description = "教师处理学生的成绩复核申请")
+    @RequirePermission(value = "grading:manage", desc = "处理复核")
     @PostMapping("/review-handle")
     public Result<Void> handleReview(
             @Parameter(description = "复核申请ID", required = true) @RequestParam Long reviewId,
@@ -112,6 +121,7 @@ public class GradingController {
     }
 
     @Operation(summary = "查询复核申请列表", description = "查询成绩复核申请列表")
+    @RequirePermission(value = "grading:view", desc = "查看批改任务")
     @GetMapping("/reviews")
     public Result<IPage<Object>> getReviews(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,

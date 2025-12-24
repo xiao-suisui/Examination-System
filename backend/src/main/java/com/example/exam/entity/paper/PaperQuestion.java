@@ -4,13 +4,13 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 试卷题目关联表实体类
- *
  * 模块：试卷管理模块（exam-paper）
  * 职责：管理试卷与题目的关联关系（固定组卷使用）
  * 表名：paper_question
@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 @TableName("paper_question")
 public class PaperQuestion implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -47,6 +48,12 @@ public class PaperQuestion implements Serializable {
      */
     @TableField("question_id")
     private Long questionId;
+
+    /**
+     * 题库ID（记录题目来源）
+     */
+    @TableField("bank_id")
+    private Long bankId;
 
     /**
      * 该题在试卷中的分值

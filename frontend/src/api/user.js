@@ -9,8 +9,8 @@ export default {
    */
   page(params) {
     return request({
-      url: '/api/user/page',
-      method: 'get',
+      url: `/user/page`,
+      method: `get`,
       params
     })
   },
@@ -20,8 +20,8 @@ export default {
    */
   getById(id) {
     return request({
-      url: `/api/user/${id}`,
-      method: 'get'
+      url: `/user/${id}`,
+      method: `get`
     })
   },
 
@@ -30,8 +30,8 @@ export default {
    */
   create(data) {
     return request({
-      url: '/api/user',
-      method: 'post',
+      url: `/user`,
+      method: `post`,
       data
     })
   },
@@ -41,8 +41,8 @@ export default {
    */
   update(id, data) {
     return request({
-      url: `/api/user/${id}`,
-      method: 'put',
+      url: `/user/${id}`,
+      method: `put`,
       data
     })
   },
@@ -52,8 +52,8 @@ export default {
    */
   deleteById(id) {
     return request({
-      url: `/api/user/${id}`,
-      method: 'delete'
+      url: `/user/${id}`,
+      method: `delete`
     })
   },
 
@@ -62,8 +62,8 @@ export default {
    */
   register(data) {
     return request({
-      url: '/api/user/register',
-      method: 'post',
+      url: `/user/register`,
+      method: `post`,
       data
     })
   },
@@ -73,8 +73,8 @@ export default {
    */
   changePassword(data) {
     return request({
-      url: '/api/user/change-password',
-      method: 'post',
+      url: `/user/change-password`,
+      method: `post`,
       data
     })
   },
@@ -84,8 +84,8 @@ export default {
    */
   resetPassword(userId) {
     return request({
-      url: `/api/user/${userId}/reset-password`,
-      method: 'post'
+      url: `/user/${userId}/reset-password`,
+      method: `post`
     })
   },
 
@@ -94,8 +94,8 @@ export default {
    */
   getCurrentUser() {
     return request({
-      url: '/api/auth/current-user',
-      method: 'get'
+      url: `/auth/current-user`,
+      method: `get`
     })
   },
 
@@ -104,8 +104,8 @@ export default {
    */
   updateProfile(data) {
     return request({
-      url: '/api/user/profile',
-      method: 'put',
+      url: `/user/profile`,
+      method: `put`,
       data
     })
   },
@@ -115,8 +115,8 @@ export default {
    */
   updatePassword(data) {
     return request({
-      url: '/api/user/update-password',
-      method: 'post',
+      url: `/user/update-password`,
+      method: `post`,
       data
     })
   },
@@ -128,8 +128,8 @@ export default {
     const formData = new FormData()
     formData.append('file', file)
     return request({
-      url: '/api/user/avatar',
-      method: 'post',
+      url: `/user/avatar`,
+      method: `post`,
       data: formData,
       headers: {
         'Content-Type': 'multipart/form-data'

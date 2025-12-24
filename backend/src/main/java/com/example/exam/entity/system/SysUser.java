@@ -100,7 +100,7 @@ public class SysUser implements Serializable {
     private UserStatus status;
 
     /**
-     * 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
+     * 审核状态：0-待审核，1-已通过，2-已拒绝
      */
     @TableField("audit_status")
     private AuditStatus auditStatus;

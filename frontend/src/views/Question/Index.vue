@@ -1,76 +1,71 @@
 <template>
   <div class="question-container">
     <!-- 页面头部 -->
-    <div class="page-header">
-      <h2>题目管理</h2>
-      <el-button type="primary" @click="handleCreate">
-        <el-icon><Plus /></el-icon>
-        创建题目
-      </el-button>
-    </div>
+    <PageHeader title="题目管理" description="管理系统中的所有题目">
+      <template #extra>
+        <el-button type="primary" @click="handleCreate">
+          <el-icon><Plus /></el-icon>
+          创建题目
+        </el-button>
+      </template>
+    </PageHeader>
 
     <!-- 搜索区域 -->
-    <el-card class="search-card">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="题目内容">
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="请输入题目内容"
-            clearable
-            style="width: 200px"
-            @clear="handleSearch"
+    <SearchForm v-model="searchForm" @search="handleSearch" @reset="handleReset">
+      <el-form-item label="所属科目">
+        <SubjectSelector
+          v-model="searchForm.subjectId"
+          :only-managed="true"
+          clearable
+          style="width: 200px"
+          @change="handleSubjectChange"
+        />
+      </el-form-item>
+
+      <el-form-item label="题目内容">
+        <el-input
+          v-model="searchForm.keyword"
+          placeholder="请输入题目内容"
+          clearable
+          style="width: 200px"
+        />
+      </el-form-item>
+
+      <el-form-item label="题库">
+        <el-select
+          v-model="searchForm.bankId"
+          placeholder="选择题库"
+          clearable
+          filterable
+          style="width: 150px"
+        >
+          <el-option
+            v-for="bank in questionBanks"
+            :key="bank.bankId"
+            :label="bank.bankName"
+            :value="bank.bankId"
           />
-        </el-form-item>
-        <el-form-item label="题库">
-          <el-select
-            v-model="searchForm.bankId"
-            placeholder="选择题库"
-            clearable
-            style="width: 150px"
-            @clear="handleSearch"
-          >
-            <el-option
-              v-for="bank in questionBanks"
-              :key="bank.bankId"
-              :label="bank.bankName"
-              :value="bank.bankId"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="题目类型">
-          <el-select
-            v-model="searchForm.questionType"
-            placeholder="选择类型"
-            clearable
-            style="width: 120px"
-            @clear="handleSearch"
-          >
-            <el-option label="单选题" :value="QUESTION_TYPE.SINGLE_CHOICE" />
-            <el-option label="多选题" :value="QUESTION_TYPE.MULTIPLE_CHOICE" />
-            <el-option label="判断题" :value="QUESTION_TYPE.TRUE_FALSE" />
-            <el-option label="填空题" :value="QUESTION_TYPE.FILL_BLANK" />
-            <el-option label="简答题" :value="QUESTION_TYPE.SUBJECTIVE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="难度">
-          <el-select
-            v-model="searchForm.difficulty"
-            placeholder="选择难度"
-            clearable
-            style="width: 100px"
-            @clear="handleSearch"
-          >
-            <el-option label="简单" :value="1" />
-            <el-option label="中等" :value="2" />
-            <el-option label="困难" :value="3" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="题目类型">
+        <EnumSelect
+          v-model="searchForm.questionType"
+          :options="QUESTION_TYPE_LABELS"
+          placeholder="选择类型"
+          style="width: 150px"
+        />
+      </el-form-item>
+
+      <el-form-item label="难度">
+        <EnumSelect
+          v-model="searchForm.difficulty"
+          :options="DIFFICULTY_LABELS"
+          placeholder="选择难度"
+          style="width: 120px"
+        />
+      </el-form-item>
+    </SearchForm>
 
     <!-- 表格区域 -->
     <el-card class="table-card">
@@ -84,33 +79,43 @@
         <el-table-column prop="questionContent" label="题目内容" min-width="300" show-overflow-tooltip />
         <el-table-column prop="questionType" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getQuestionTypeColor(row.questionType)" v-if="row.questionType !== undefined">
-              {{ getQuestionTypeName(row.questionType) }}
-            </el-tag>
+            <EnumTag
+              v-if="row.questionType !== undefined"
+              :model-value="row.questionType"
+              :label-map="QUESTION_TYPE_LABELS"
+              :type-map="QUESTION_TYPE_COLORS"
+              size="small"
+            />
             <span v-else>-</span>
           </template>
         </el-table-column>
+
         <el-table-column prop="difficulty" label="难度" width="120">
           <template #default="{ row }">
             <el-rate
               :model-value="Number(row.difficulty) || 0"
               :max="3"
               disabled
-              show-score
               text-color="#ff9900"
             />
           </template>
         </el-table-column>
+
         <el-table-column prop="defaultScore" label="分值" width="80">
           <template #default="{ row }">
             {{ row.defaultScore || '-' }}
           </template>
         </el-table-column>
+
         <el-table-column prop="auditStatus" label="审核状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getAuditStatusColor(row.auditStatus)" v-if="row.auditStatus !== undefined">
-              {{ getAuditStatusName(row.auditStatus) }}
-            </el-tag>
+            <EnumTag
+              v-if="row.auditStatus !== undefined"
+              :model-value="row.auditStatus"
+              :label-map="AUDIT_STATUS_LABELS"
+              :type-map="AUDIT_STATUS_COLORS"
+              size="small"
+            />
             <span v-else>-</span>
           </template>
         </el-table-column>
@@ -119,7 +124,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="danger" @click="handleDeleteQuestion(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -127,13 +132,13 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
-          v-model:current-page="pagination.current"
-          v-model:page-size="pagination.size"
+          v-model:current-page="searchForm.current"
+          v-model:page-size="searchForm.size"
           :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
+          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
+          @current-change="handlePageChange"
         />
       </div>
     </el-card>
@@ -182,7 +187,7 @@
         </el-form-item>
 
         <el-form-item label="难度" prop="difficulty">
-          <el-rate v-model="formData.difficulty" :max="3" />
+          <el-rate v-model="formData.difficulty" :max="3"/>
         </el-form-item>
 
         <el-form-item label="分值" prop="defaultScore">
@@ -260,45 +265,80 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { PageHeader, SearchForm, EnumTag } from '@/components/common'
+import EnumSelect from '@/components/EnumSelect.vue'
+import SubjectSelector from '@/components/SubjectSelector.vue'
+import { useTableList } from '@/composables/useTableList'
 import questionApi from '@/api/question'
 import questionBankApi from '@/api/questionBank'
 import {
   QUESTION_TYPE,
-  getQuestionTypeName,
-  getQuestionTypeColor,
-  getAuditStatusName,
-  getAuditStatusColor,
-  getDifficultyName,
-  getDifficultyColor
+  QUESTION_TYPE_LABELS,
+  QUESTION_TYPE_COLORS,
+  DIFFICULTY_LABELS,
+  AUDIT_STATUS_LABELS,
+  AUDIT_STATUS_COLORS
 } from '@/utils/enums'
+import { required, length, range } from '@/utils/validate'
 
 const router = useRouter()
 
-// 搜索表单
-const searchForm = reactive({
+// ==================== 使用组合式函数 ====================
+const {
+  loading,
+  tableData,
+  total,
+  searchForm,
+  loadData,
+  handleSearch,
+  handleReset,
+  handlePageChange,
+  handleSizeChange,
+  handleDelete
+} = useTableList(questionApi, {
   keyword: '',
+  subjectId: null,
   bankId: null,
   questionType: null,
   difficulty: null
 })
 
-// 表格数据
-const tableData = ref([])
-const loading = ref(false)
-
-// 题库列表
+// ==================== 题库列表 ====================
 const questionBanks = ref([])
 
-// 分页
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
-})
+const loadQuestionBanks = async (subjectId = null) => {
+  try {
+    const params = subjectId ? { subjectId } : {}
+    const res = await questionBankApi.page({
+      current: 1,
+      size: 100,
+      ...params
+    })
+    if (res.code === 200) {
+      questionBanks.value = res.data?.records || []
+    }
+  } catch (error) {
+    console.error('加载题库失败', error)
+  }
+}
 
-// 对话框
+// 科目选择变化
+const handleSubjectChange = (subjectId) => {
+  // 清空题库选择
+  searchForm.bankId = null
+  // 重新加载该科目的题库
+  if (subjectId) {
+    loadQuestionBanks(subjectId)
+  } else {
+    loadQuestionBanks()
+  }
+  // 执行搜索
+  handleSearch()
+}
+
+// ==================== 对话框 ====================
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const submitLoading = ref(false)
@@ -308,92 +348,32 @@ const formRef = ref(null)
 const formData = reactive({
   questionId: null,
   bankId: null,
-  questionType: QUESTION_TYPE.SINGLE_CHOICE,
+  questionType: QUESTION_TYPE.SINGLE_CHOICE,  // 默认单选题（值为 1）
   questionContent: '',
   difficulty: 2,
   defaultScore: 5,
-  options: [],  // 选项数组，默认为空
-  correctAnswer: '',  // 填空题和主观题的答案
-  analysis: '',  // 题目解析
-  knowledgeIds: ''  // 知识点IDs（可选）
+  options: [],
+  correctAnswer: '',
+  analysis: '',
+  knowledgeIds: ''
 })
 
-// 表单验证规则
+// 表单验证规则（使用通用验证函数）
 const formRules = {
-  bankId: [
-    { required: true, message: '请选择题库', trigger: 'change' }
-  ],
-  questionType: [
-    { required: true, message: '请选择题目类型', trigger: 'change' }
-  ],
+  bankId: [required('请选择题库', 'change')],
+  questionType: [required('请选择题目类型', 'change')],
   questionContent: [
-    { required: true, message: '请输入题目内容', trigger: 'blur' },
-    { min: 5, max: 1000, message: '长度在 5 到 1000 个字符', trigger: 'blur' }
+    required('请输入题目内容'),
+    length(5, 1000)
   ],
   defaultScore: [
-    { required: true, message: '请输入分值', trigger: 'blur' }
-  ]
+    required('请输入分值'),
+    range(0, 100, '分值必须在 0 到 100 之间')
+  ],
+  difficulty: [required('请选择难度', 'change')]
 }
 
-// 加载题库列表
-const loadQuestionBanks = async () => {
-  try {
-    const res = await questionBankApi.list()
-    if (res.code === 200) {
-      questionBanks.value = res.data
-    }
-  } catch (error) {
-    console.error('加载题库失败', error)
-  }
-}
-
-// 加载题目列表
-const loadQuestions = async () => {
-  loading.value = true
-  try {
-    const params = {
-      current: pagination.current,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      bankId: searchForm.bankId || undefined,
-      questionType: searchForm.questionType || undefined,
-      difficulty: searchForm.difficulty || undefined
-    }
-    const res = await questionApi.page(params)
-    if (res.code === 200) {
-      tableData.value = res.data.records
-      pagination.total = res.data.total
-    }
-  } catch (error) {
-    ElMessage.error('加载失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 搜索
-const handleSearch = () => {
-  pagination.current = 1
-  loadQuestions()
-}
-
-// 重置
-const handleReset = () => {
-  searchForm.keyword = ''
-  searchForm.bankId = null
-  searchForm.questionType = null
-  searchForm.difficulty = null
-  handleSearch()
-}
-
-// 分页变化
-const handleSizeChange = () => {
-  loadQuestions()
-}
-
-const handleCurrentChange = () => {
-  loadQuestions()
-}
+// ==================== 对话框操作 ====================
 
 // 创建
 const handleCreate = () => {
@@ -420,11 +400,11 @@ const handleEdit = async (row) => {
         questionContent: question.questionContent,
         difficulty: Number(question.difficulty) || 2,
         defaultScore: question.defaultScore,
-        analysis: question.analysis || '',
+        analysis: question.answerAnalysis || question.analysis || '',
         // 深拷贝选项数组
         options: question.options ? JSON.parse(JSON.stringify(question.options)) : [],
         // 填空题和主观题的答案
-        correctAnswer: question.correctAnswer || ''
+        correctAnswer: question.correctAnswer || question.referenceAnswer || ''
       })
 
       dialogVisible.value = true
@@ -432,38 +412,28 @@ const handleEdit = async (row) => {
       ElMessage.error('加载题目详情失败')
     }
   } catch (error) {
+    console.error('加载题目详情失败:', error)
     ElMessage.error('加载题目详情失败')
   }
 }
 
 // 查看
 const handleView = (row) => {
-  router.push(`/admin/question/${row.questionId}`)
+  router.push({
+    name: 'QuestionDetail',
+    params: { id: row.questionId }
+  }).catch(err => {
+    console.error('路由跳转失败:', err)
+    ElMessage.error('页面跳转失败')
+  })
 }
 
-// 删除
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除题目"${row.questionContent}"吗？`,
-      '警告',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    const res = await questionApi.deleteById(row.questionId)
-    if (res.code === 200) {
-      ElMessage.success('删除成功')
-      loadQuestions()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
+// 删除（使用 useTableList 提供的，只需传递 ID 和确认消息）
+const handleDeleteQuestion = (row) => {
+  handleDelete(
+    row.questionId,
+    `确定要删除题目"${row.questionContent.substring(0, 20)}..."吗？`
+  )
 }
 
 // 添加选项
@@ -502,7 +472,7 @@ const handleSubmit = async () => {
       if (res.code === 200) {
         ElMessage.success(formData.questionId ? '更新成功' : '创建成功')
         dialogVisible.value = false
-        loadQuestions()
+        loadData()
       }
     } catch (error) {
       ElMessage.error(formData.questionId ? '更新失败' : '创建失败')
@@ -531,10 +501,10 @@ const resetForm = () => {
 }
 
 
-// 初始化
+// ==================== 初始化 ====================
 onMounted(() => {
   loadQuestionBanks()
-  loadQuestions()
+  loadData()
 })
 </script>
 
@@ -543,26 +513,8 @@ onMounted(() => {
   padding: 20px;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.search-card,
 .table-card {
-  margin-bottom: 20px;
-}
-
-.search-form {
-  margin-bottom: 0;
+  margin-top: 16px;
 }
 
 .pagination-container {

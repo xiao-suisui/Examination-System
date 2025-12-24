@@ -15,38 +15,38 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(getToken() || null)
   const isAuthenticated = ref(!!getToken())
   const userInfo = ref(null)
+  const userPermissions = ref([])  // 用户权限列表
 
   // ==================== Getters ====================
   const isLoggedIn = computed(() => isAuthenticated.value && !!token.value)
 
-  const userRole = computed(() => userInfo.value?.role || null)
+  const user = computed(() => userInfo.value)  // 别名，方便使用
+
+  const userRole = computed(() => userInfo.value?.roleId || null)
 
   const userId = computed(() => userInfo.value?.userId || null)
 
   const username = computed(() => userInfo.value?.username || '')
 
-  const permissions = computed(() => userInfo.value?.permissions || [])
+  const permissions = computed(() => userPermissions.value || [])
 
   /**
    * 检查是否有某个权限
    */
-  const hasPermission = computed(() => {
-    return (permission) => {
-      if (!permissions.value || permissions.value.length === 0) {
-        return false
-      }
-      return permissions.value.includes(permission)
-    }
-  })
+  function hasPermission(permission) {
+    if (!permission) return true
+    // 超级管理员拥有所有权限
+    if (userInfo.value?.username === 'admin') return true
+    // 检查是否有该权限
+    return userPermissions.value.includes(permission)
+  }
 
   /**
    * 检查是否有某个角色
    */
-  const hasRole = computed(() => {
-    return (role) => {
-      return userRole.value === role
-    }
-  })
+  function hasRole(role) {
+    return userRole.value === role
+  }
 
   // ==================== Actions ====================
 
@@ -72,8 +72,13 @@ export const useAuthStore = defineStore('auth', () => {
           userId: loginData.userId,
           username: loginData.username,
           realName: loginData.realName,
-          roleId: loginData.roleId
+          roleId: loginData.roleId,
+          roleCode: loginData.roleCode,  // 添加角色编码
+          roleName: loginData.roleName    // 添加角色名称
         }
+
+        // 保存权限信息
+        userPermissions.value = loginData.permissions || []
 
         ElMessage.success('登录成功')
 
@@ -101,7 +106,17 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       isAuthenticated.value = false
       userInfo.value = null
+      userPermissions.value = []
       removeToken()
+
+      // 清空权限Store
+      try {
+        const { usePermissionStore } = await import('./permission')
+        const permissionStore = usePermissionStore()
+        permissionStore.clearPermissions()
+      } catch (e) {
+        console.error('清空权限失败:', e)
+      }
 
       ElMessage.success('已退出登录')
 
@@ -119,6 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (res.code === 200) {
         userInfo.value = res.data
+        // 更新权限信息
+        userPermissions.value = res.data.permissions || []
         return res.data
       }
     } catch (error) {
@@ -182,9 +199,11 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     isAuthenticated,
     userInfo,
+    userPermissions,
 
     // Getters
     isLoggedIn,
+    user,  // 导出 user 别名
     userRole,
     userId,
     username,

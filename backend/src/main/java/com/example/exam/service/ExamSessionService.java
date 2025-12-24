@@ -23,32 +23,32 @@ public interface ExamSessionService extends IService<ExamSession> {
     /**
      * 保存答案
      */
-    boolean saveAnswer(Long sessionId, ExamAnswer answer);
+    boolean saveAnswer(String sessionId, ExamAnswer answer);
 
     /**
      * 批量保存答案
      */
-    boolean saveAnswers(Long sessionId, List<ExamAnswer> answers);
+    boolean saveAnswers(String sessionId, List<ExamAnswer> answers);
 
     /**
      * 提交考试
      */
-    boolean submitExam(Long sessionId);
+    boolean submitExam(String sessionId);
 
     /**
      * 暂停考试
      */
-    boolean pauseExam(Long sessionId);
+    boolean pauseExam(String sessionId);
 
     /**
      * 恢复考试
      */
-    boolean resumeExam(Long sessionId);
+    boolean resumeExam(String sessionId);
 
     /**
      * 获取考试结果
      */
-    Object getExamResult(Long sessionId);
+    Object getExamResult(String sessionId);
 
     /**
      * 获取我的考试会话
@@ -58,12 +58,12 @@ public interface ExamSessionService extends IService<ExamSession> {
     /**
      * 获取剩余时间（秒）
      */
-    Long getRemainingTime(Long sessionId);
+    Long getRemainingTime(String sessionId);
 
     /**
      * 标记题目
      */
-    boolean markQuestion(Long sessionId, Long questionId, String markType);
+    boolean markQuestion(String sessionId, Long questionId, String markType);
 
     /**
      * 记录切屏

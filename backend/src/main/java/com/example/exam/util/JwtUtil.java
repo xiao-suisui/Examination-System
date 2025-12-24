@@ -48,9 +48,24 @@ public class JwtUtil {
      * @return JWT Token
      */
     public String generateToken(String username, Long userId) {
+        return generateToken(username, userId, null);
+    }
+
+    /**
+     * 生成JWT Token（包含角色ID）
+     *
+     * @param username 用户名
+     * @param userId   用户ID
+     * @param roleId   角色ID
+     * @return JWT Token
+     */
+    public String generateToken(String username, Long userId, Long roleId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        if (roleId != null) {
+            claims.put("roleId", roleId);
+        }
         return createToken(claims, username, expiration);
     }
 
@@ -109,6 +124,17 @@ public class JwtUtil {
     public Long getUserIdFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims.get("userId", Long.class);
+    }
+
+    /**
+     * 从Token中获取角色ID
+     *
+     * @param token JWT Token
+     * @return 角色ID
+     */
+    public Long getRoleIdFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("roleId", Long.class);
     }
 
     /**

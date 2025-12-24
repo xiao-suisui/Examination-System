@@ -13,8 +13,8 @@ export default {
    */
   getPendingGradingList(params) {
     return request({
-      url: '/api/grading/pending',
-      method: 'get',
+      url: `/grading/pending`,
+      method: `get`,
       params
     })
   },
@@ -26,8 +26,8 @@ export default {
    */
   gradeAnswer(data) {
     return request({
-      url: '/api/grading/grade',
-      method: 'post',
+      url: `/grading/grade`,
+      method: `post`,
       data
     })
   },
@@ -39,8 +39,8 @@ export default {
    */
   batchGrade(data) {
     return request({
-      url: '/api/grading/batch-grade',
-      method: 'post',
+      url: `/grading/batch-grade`,
+      method: `post`,
       data
     })
   },
@@ -52,8 +52,8 @@ export default {
    */
   getMyTasks(params) {
     return request({
-      url: '/api/grading/my-tasks',
-      method: 'get',
+      url: `/grading/my-tasks`,
+      method: `get`,
       params
     })
   },
@@ -65,8 +65,8 @@ export default {
    */
   assignTasks(data) {
     return request({
-      url: '/api/grading/assign',
-      method: 'post',
+      url: `/grading/assign`,
+      method: `post`,
       data
     })
   },
@@ -78,8 +78,8 @@ export default {
    */
   getGradingProgress(examId) {
     return request({
-      url: `/api/grading/progress/${examId}`,
-      method: 'get'
+      url: `/grading/progress/${examId}`,
+      method: `get`
     })
   },
 
@@ -90,8 +90,8 @@ export default {
    */
   requestReview(data) {
     return request({
-      url: '/api/grading/review-request',
-      method: 'post',
+      url: `/grading/review-request`,
+      method: `post`,
       data
     })
   },
@@ -103,8 +103,8 @@ export default {
    */
   handleReview(data) {
     return request({
-      url: '/api/grading/review-handle',
-      method: 'post',
+      url: `/grading/review-handle`,
+      method: `post`,
       data
     })
   }

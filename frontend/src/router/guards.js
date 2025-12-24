@@ -1,9 +1,11 @@
 /**
  * 路由守卫
  * @description 权限验证、登录验证、页面标题设置等
+ * @author Exam System (Updated 2025-12-20)
  */
 
 import { useAuthStore } from '@/stores/modules/auth'
+import { usePermissionStore } from '@/stores/modules/permission'
 import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
@@ -23,6 +25,7 @@ export function setupBeforeEach(router) {
     document.title = to.meta.title ? `${to.meta.title} - 在线考试系统` : '在线考试系统'
 
     const authStore = useAuthStore()
+    const permissionStore = usePermissionStore()
     const isAuthenticated = authStore.isLoggedIn
 
     // 不需要认证的页面，直接放行
@@ -47,25 +50,29 @@ export function setupBeforeEach(router) {
       return
     }
 
-    // 检查权限
-    if (to.meta.permission) {
-      const hasPermission = authStore.hasPermission(to.meta.permission)
-      if (!hasPermission) {
-        ElMessage.error('您没有权限访问此页面')
-        next('/403')
+    // 确保权限已加载
+    if (!permissionStore.loaded) {
+      try {
+        await permissionStore.loadPermissions()
+      } catch (error) {
+        console.error('[Guards] 加载权限失败:', error)
+        ElMessage.error('加载权限失败，请重新登录')
+        authStore.logout()
+        next('/login')
         return
       }
     }
 
-    // 检查角色
-    if (to.meta.role) {
-      const roles = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role]
-      const hasRole = roles.includes(authStore.userRole)
-      if (!hasRole) {
-        ElMessage.error('您的角色无法访问此页面')
-        next('/403')
-        return
-      }
+    // 检查路由权限（包含角色和功能权限检查）
+    if (!permissionStore.hasRoutePermission(to)) {
+      console.warn('[Guards] 权限验证失败:', {
+        path: to.path,
+        user: authStore.user?.username,
+        role: authStore.user?.roleCode || authStore.user?.roleName
+      })
+      ElMessage.error('您没有权限访问此页面')
+      next('/403')
+      return
     }
 
     next()

@@ -6,12 +6,23 @@ import request from '@/utils/request'
 
 export default {
   /**
+   * 获取试卷列表（全部）
+   */
+  list(params) {
+    return request({
+      url: `/paper/list`,
+      method: `get`,
+      params
+    })
+  },
+
+  /**
    * 分页查询试卷
    */
   page(params) {
     return request({
-      url: '/api/paper/page',
-      method: 'get',
+      url: `/paper/page`,
+      method: `get`,
       params
     })
   },
@@ -21,8 +32,8 @@ export default {
    */
   getById(id) {
     return request({
-      url: `/api/paper/${id}`,
-      method: 'get'
+      url: `/paper/${id}`,
+      method: `get`
     })
   },
 
@@ -31,8 +42,8 @@ export default {
    */
   create(data) {
     return request({
-      url: '/api/paper',
-      method: 'post',
+      url: `/paper`,
+      method: `post`,
       data
     })
   },
@@ -42,8 +53,8 @@ export default {
    */
   update(id, data) {
     return request({
-      url: `/api/paper/${id}`,
-      method: 'put',
+      url: `/paper/${id}`,
+      method: `put`,
       data
     })
   },
@@ -53,8 +64,8 @@ export default {
    */
   deleteById(id) {
     return request({
-      url: `/api/paper/${id}`,
-      method: 'delete'
+      url: `/paper/${id}`,
+      method: `delete`
     })
   },
 
@@ -63,7 +74,7 @@ export default {
    */
   autoGenerate(data) {
     return request({
-      url: '/api/paper/auto-generate',
+      url: `/api/paper/auto-generate`,
       method: 'post',
       data
     })
@@ -74,8 +85,8 @@ export default {
    */
   publish(id) {
     return request({
-      url: `/api/paper/${id}/publish`,
-      method: 'post'
+      url: `/paper/${id}/publish`,
+      method: `post`
     })
   },
 
@@ -84,8 +95,8 @@ export default {
    */
   archive(id) {
     return request({
-      url: `/api/paper/${id}/archive`,
-      method: 'post'
+      url: `/paper/${id}/archive`,
+      method: `post`
     })
   },
 
@@ -94,8 +105,8 @@ export default {
    */
   getStatistics(id) {
     return request({
-      url: `/api/paper/${id}/statistics`,
-      method: 'get'
+      url: `/paper/${id}/statistics`,
+      method: `get`
     })
   },
 
@@ -104,8 +115,30 @@ export default {
    */
   preview(id) {
     return request({
-      url: `/api/paper/${id}/preview`,
-      method: 'get'
+      url: `/paper/${id}/preview`,
+      method: `get`
+    })
+  },
+
+  /**
+   * 添加题目到试卷
+   */
+  addQuestions(id, questionIds) {
+    return request({
+      url: `/paper/${id}/questions`,
+      method: `post`,
+      data: questionIds
+    })
+  },
+
+  /**
+   * 从试卷移除题目
+   */
+  removeQuestions(id, questionIds) {
+    return request({
+      url: `/paper/${id}/questions`,
+      method: `delete`,
+      data: questionIds
     })
   }
 }

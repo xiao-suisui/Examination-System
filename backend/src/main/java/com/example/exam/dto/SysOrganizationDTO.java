@@ -1,5 +1,7 @@
 package com.example.exam.dto;
 
+import com.example.exam.common.enums.OrgLevel;
+import com.example.exam.common.enums.OrgType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -33,11 +35,11 @@ public class SysOrganizationDTO {
     private Long parentId;
 
     @NotNull(message = "组织层级不能为空")
-    @Schema(description = "组织层级：1-学校/企业，2-学院/部门，3-班级/小组", required = true)
-    private Integer orgLevel;
+    @Schema(description = "组织层级", required = true)
+    private OrgLevel orgLevel;
 
-    @Schema(description = "组织类型：SCHOOL-学校，ENTERPRISE-企业，TRAINING-培训机构")
-    private String orgType;
+    @Schema(description = "组织类型")
+    private OrgType orgType;
 
     @Schema(description = "排序")
     private Integer sort;

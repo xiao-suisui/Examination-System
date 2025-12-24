@@ -1,5 +1,6 @@
 package com.example.exam.controller;
 
+import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.result.Result;
 import com.example.exam.service.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ public class StatisticsController {
     private final StatisticsService statisticsService;
 
     @Operation(summary = "考试统计概览", description = "获取考试的整体统计数据")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/exam/{examId}/overview")
     public Result<Object> examOverview(
             @Parameter(description = "考试ID", required = true) @PathVariable Long examId) {
@@ -35,6 +37,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "成绩分布", description = "查询考试成绩的分布情况（分数段统计）")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/exam/{examId}/score-distribution")
     public Result<Object> scoreDistribution(
             @Parameter(description = "考试ID", required = true) @PathVariable Long examId) {
@@ -43,6 +46,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "题目统计", description = "统计题目的答题情况（正确率、平均分等）")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/question/{questionId}")
     public Result<Object> questionStatistics(
             @Parameter(description = "题目ID", required = true) @PathVariable Long questionId,
@@ -52,6 +56,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "知识点掌握度", description = "分析学生对各知识点的掌握情况")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/knowledge-mastery")
     public Result<Object> knowledgeMastery(
             @Parameter(description = "学生ID") @RequestParam(required = false) Long userId,
@@ -61,6 +66,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "学生成绩报告", description = "生成学生的详细成绩报告")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/student/{userId}/report")
     public Result<Object> studentReport(
             @Parameter(description = "学生ID", required = true) @PathVariable Long userId,
@@ -72,6 +78,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "班级成绩对比", description = "对比不同班级/组织的成绩情况")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/class-comparison")
     public Result<Object> classComparison(
             @Parameter(description = "考试ID", required = true) @RequestParam Long examId,
@@ -81,6 +88,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "考试趋势分析", description = "分析学生成绩的趋势变化")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/trend/{userId}")
     public Result<Object> trendAnalysis(
             @Parameter(description = "学生ID", required = true) @PathVariable Long userId,
@@ -91,6 +99,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "题库质量分析", description = "分析题库中题目的质量（区分度、难度等）")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/bank/{bankId}/quality")
     public Result<Object> bankQualityAnalysis(
             @Parameter(description = "题库ID", required = true) @PathVariable Long bankId) {
@@ -99,6 +108,7 @@ public class StatisticsController {
     }
 
     @Operation(summary = "系统使用统计", description = "统计系统的使用情况")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
     @GetMapping("/system-usage")
     public Result<Object> systemUsage(
             @Parameter(description = "开始时间") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,

@@ -55,16 +55,22 @@ public enum AuditStatus {
      * 根据编码获取审核状态枚举
      *
      * @param code 状态编码
-     * @return 审核状态枚举，未找到则返回null
+     * @return 审核状态枚举
+     * @throws IllegalArgumentException 如果编码无效
      */
-    public static AuditStatus fromCode(int code) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public static AuditStatus of(Integer code) {
+        if (code == null) {
+            return null;
+        }
         for (AuditStatus status : values()) {
             if (status.getCode() == code) {
                 return status;
             }
         }
-        return null;
+        throw new IllegalArgumentException("无效的审核状态编码: " + code);
     }
+
 
     /**
      * 判断是否可以提交审核

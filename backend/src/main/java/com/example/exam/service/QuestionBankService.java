@@ -17,9 +17,14 @@ public interface QuestionBankService extends IService<QuestionBank> {
 
     /**
      * 分页查询题库
+     *
+     * @param page 分页参数
+     * @param keyword 关键词
+     * @param bank 题库类型
+     * @param subjectId 科目ID
+     * @return 分页结果
      */
-    IPage<QuestionBank> pageQuestionBanks(Page<QuestionBank> page, String keyword, BankType
-            bank);
+    IPage<QuestionBank> pageQuestionBanks(Page<QuestionBank> page, String keyword, BankType bank, Long subjectId);
 
     /**
      * 获取题库统计信息
@@ -38,5 +43,23 @@ public interface QuestionBankService extends IService<QuestionBank> {
      * 导出题库题目
      */
     Object exportQuestions(Long bankId);
+
+    /**
+     * 批量添加题目到题库
+     *
+     * @param bankId 题库ID
+     * @param questionIds 题目ID列表
+     * @return 是否添加成功
+     */
+    boolean addQuestions(Long bankId, java.util.List<Long> questionIds);
+
+    /**
+     * 从题库中移除题目
+     *
+     * @param bankId 题库ID
+     * @param questionId 题目ID
+     * @return 是否移除成功
+     */
+    boolean removeQuestion(Long bankId, Long questionId);
 }
 

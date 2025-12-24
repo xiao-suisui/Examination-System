@@ -52,7 +52,6 @@ spring:
 
 # MyBatis Plus配置
 mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.example.exam.entity
   configuration:
     map-underscore-to-camel-case: true

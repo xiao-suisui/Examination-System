@@ -2,6 +2,7 @@ package com.example.exam.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.enums.ExamStatus;
 import com.example.exam.common.result.Result;
 import com.example.exam.entity.exam.Exam;
@@ -30,6 +31,7 @@ public class ExamController {
     private final ExamService examService;
 
     @Operation(summary = "分页查询考试", description = "支持按状态、时间范围等条件筛选考试列表")
+    @RequirePermission(value = "exam:view", desc = "查看考试")
     @GetMapping("/page")
     public Result<IPage<Exam>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
@@ -40,7 +42,7 @@ public class ExamController {
             @Parameter(description = "开始时间（止）") @RequestParam(required = false) LocalDateTime startTimeEnd) {
 
         // 手动转换枚举
-        ExamStatus statusEnum = status != null ? ExamStatus.fromCode(status) : null;
+        ExamStatus statusEnum = status != null ? ExamStatus.of(status) : null;
 
         Page<Exam> page = new Page<>(current, size);
         IPage<Exam> result = examService.pageExams(page, statusEnum, keyword, startTimeBegin, startTimeEnd);
@@ -48,6 +50,7 @@ public class ExamController {
     }
 
     @Operation(summary = "查询考试详情", description = "根据ID查询考试的详细信息")
+    @RequirePermission(value = "exam:view", desc = "查看考试")
     @GetMapping("/{id}")
     public Result<Exam> getById(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -56,6 +59,7 @@ public class ExamController {
     }
 
     @Operation(summary = "创建考试", description = "创建新的考试，指定试卷、时间、参与人等信息")
+    @RequirePermission(value = "exam:create", desc = "创建考试")
     @PostMapping
     public Result<Long> create(
             @Parameter(description = "考试信息", required = true) @RequestBody Exam exam) {
@@ -64,6 +68,7 @@ public class ExamController {
     }
 
     @Operation(summary = "更新考试", description = "更新考试信息（仅未开始的考试可更新）")
+    @RequirePermission(value = "exam:update", desc = "更新考试")
     @PutMapping("/{id}")
     public Result<Void> update(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id,
@@ -74,6 +79,7 @@ public class ExamController {
     }
 
     @Operation(summary = "删除考试", description = "删除考试（仅未开始的考试可删除）")
+    @RequirePermission(value = "exam:delete", desc = "删除考试")
     @DeleteMapping("/{id}")
     public Result<Void> delete(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -82,6 +88,7 @@ public class ExamController {
     }
 
     @Operation(summary = "发布考试", description = "将草稿状态的考试发布，参与人员将收到通知")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
     @PostMapping("/{id}/publish")
     public Result<Void> publish(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -90,6 +97,7 @@ public class ExamController {
     }
 
     @Operation(summary = "开始考试", description = "手动开始考试（提前开考或延迟开考）")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
     @PostMapping("/{id}/start")
     public Result<Void> start(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -98,6 +106,7 @@ public class ExamController {
     }
 
     @Operation(summary = "结束考试", description = "手动结束考试（提前结束或延迟结束）")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
     @PostMapping("/{id}/end")
     public Result<Void> end(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -106,6 +115,7 @@ public class ExamController {
     }
 
     @Operation(summary = "取消考试", description = "取消考试")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
     @PostMapping("/{id}/cancel")
     public Result<Void> cancel(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
@@ -145,6 +155,69 @@ public class ExamController {
             @Parameter(description = "组织ID") @RequestParam(required = false) Long orgId) {
         java.util.List<Exam> exams = examService.getExamsByUser(userId, orgId);
         return Result.success(exams);
+    }
+
+    @Operation(summary = "获取当前学生的考试列表", description = "获取当前登录学生可参加的考试列表")
+    @GetMapping("/my-exams")
+    public Result<java.util.List<com.example.exam.dto.ExamDTO>> getMyExams(
+            @Parameter(description = "考试状态筛选", example = "1") @RequestParam(required = false) Integer status) {
+        // TODO: 从认证信息中获取当前用户ID
+        Long userId = 1L;
+        ExamStatus statusEnum = status != null ? ExamStatus.of(status) : null;
+        java.util.List<com.example.exam.dto.ExamDTO> exams = examService.getMyExams(userId, statusEnum);
+        return Result.success(exams);
+    }
+
+    @Operation(summary = "学生进入考试", description = "学生点击进入考试，创建考试会话")
+    @PostMapping("/{id}/enter")
+    public Result<String> enterExam(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
+        // TODO: 从认证信息中获取当前用户ID
+        Long userId = 1L;
+        String sessionId = examService.enterExam(id, userId);
+        return sessionId != null ? Result.success("进入考试成功", sessionId) : Result.error("无法进入考试");
+    }
+
+    @Operation(summary = "获取考试的考生列表", description = "查询参加该考试的所有考生信息")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
+    @GetMapping("/{id}/students")
+    public Result<java.util.List<com.example.exam.dto.ExamUserDTO>> getExamStudents(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
+        java.util.List<com.example.exam.dto.ExamUserDTO> students = examService.getExamStudents(id);
+        return Result.success(students);
+    }
+
+    @Operation(summary = "添加考生到考试", description = "批量添加考生到考试")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
+    @PostMapping("/{id}/students")
+    public Result<Void> addStudentsToExam(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id,
+            @Parameter(description = "用户ID列表", required = true) @RequestBody java.util.Map<String, java.util.List<Long>> request) {
+        java.util.List<Long> userIds = request.get("userIds");
+        if (userIds == null || userIds.isEmpty()) {
+            return Result.error("请选择至少一个考生");
+        }
+        boolean success = examService.addStudentsToExam(id, userIds);
+        return success ? Result.success("添加成功") : Result.error("添加失败");
+    }
+
+    @Operation(summary = "移除考生", description = "从考试中移除某个考生")
+    @RequirePermission(value = "exam:manage", desc = "管理考试")
+    @DeleteMapping("/{id}/students/{userId}")
+    public Result<Void> removeStudent(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id,
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+        boolean success = examService.removeStudentFromExam(id, userId);
+        return success ? Result.success("移除成功") : Result.error("移除失败");
+    }
+
+    @Operation(summary = "检查考试权限", description = "检查指定用户是否有权限参加该考试")
+    @GetMapping("/{id}/students/check-permission")
+    public Result<Boolean> checkExamPermission(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long id,
+            @Parameter(description = "用户ID", required = true) @RequestParam Long userId) {
+        boolean hasPermission = examService.checkExamPermission(id, userId);
+        return Result.success(hasPermission);
     }
 }
 

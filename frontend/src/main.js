@@ -17,6 +17,9 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 // NProgress
 import 'nprogress/nprogress.css'
 
+// 全局指令
+import directives from './directives'
+
 // 创建应用实例
 const app = createApp(App)
 
@@ -32,6 +35,7 @@ app.use(ElementPlus, {
   locale: zhCn,
   size: 'default'
 })
+app.use(directives)  // 注册全局指令
 
 // 全局错误处理
 app.config.errorHandler = (err, instance, info) => {

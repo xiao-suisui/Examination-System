@@ -1,53 +1,41 @@
 <template>
   <div class="home-container">
+    <!-- 统计卡片区域 -->
     <el-row :gutter="20">
-      <!-- 统计卡片 -->
       <el-col :span="6">
-        <el-card class="stat-card">
-          <div class="stat-icon" style="background: #409eff">
-            <el-icon :size="32"><Document /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-label">题库总数</div>
-            <div class="stat-value">{{ statistics.questionBankCount }}</div>
-          </div>
-        </el-card>
+        <StatCard
+          icon="Document"
+          icon-color="#409eff"
+          label="题库总数"
+          :value="statistics.questionBankCount"
+        />
       </el-col>
 
       <el-col :span="6">
-        <el-card class="stat-card">
-          <div class="stat-icon" style="background: #67c23a">
-            <el-icon :size="32"><EditPen /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-label">题目总数</div>
-            <div class="stat-value">{{ statistics.questionCount }}</div>
-          </div>
-        </el-card>
+        <StatCard
+          icon="EditPen"
+          icon-color="#67c23a"
+          label="题目总数"
+          :value="statistics.questionCount"
+        />
       </el-col>
 
       <el-col :span="6">
-        <el-card class="stat-card">
-          <div class="stat-icon" style="background: #e6a23c">
-            <el-icon :size="32"><Files /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-label">考试总数</div>
-            <div class="stat-value">{{ statistics.examCount }}</div>
-          </div>
-        </el-card>
+        <StatCard
+          icon="Files"
+          icon-color="#e6a23c"
+          label="考试总数"
+          :value="statistics.examCount"
+        />
       </el-col>
 
       <el-col :span="6">
-        <el-card class="stat-card">
-          <div class="stat-icon" style="background: #f56c6c">
-            <el-icon :size="32"><User /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-label">用户总数</div>
-            <div class="stat-value">{{ statistics.userCount }}</div>
-          </div>
-        </el-card>
+        <StatCard
+          icon="User"
+          icon-color="#f56c6c"
+          label="用户总数"
+          :value="statistics.userCount"
+        />
       </el-col>
     </el-row>
 
@@ -83,19 +71,19 @@
             </div>
           </template>
           <div class="quick-links">
-            <el-button type="primary" @click="goTo('/question-bank/list')">
+            <el-button type="primary" @click="goTo('/question-bank')">
               <el-icon><Collection /></el-icon>
               题库管理
             </el-button>
-            <el-button type="success" @click="goTo('/question/list')">
+            <el-button type="success" @click="goTo('/question')">
               <el-icon><EditPen /></el-icon>
               题目管理
             </el-button>
-            <el-button type="warning" @click="goTo('/paper/list')">
+            <el-button type="warning" @click="goTo('/paper')">
               <el-icon><Document /></el-icon>
               试卷管理
             </el-button>
-            <el-button type="danger" @click="goTo('/exam/list')">
+            <el-button type="danger" @click="goTo('/exam')">
               <el-icon><Files /></el-icon>
               考试管理
             </el-button>
@@ -109,7 +97,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { EXAM_STATUS, EXAM_STATUS_LABELS, EXAM_STATUS_COLORS } from '@/utils/constants'
+import { Collection, EditPen, Document, Files } from '@element-plus/icons-vue'
+import { StatCard } from '@/components/common'
+import { EXAM_STATUS_LABELS, EXAM_STATUS_COLORS } from '@/utils/enums'
+import api from '@/api'
 
 const router = useRouter()
 
@@ -121,6 +112,7 @@ const statistics = ref({
 })
 
 const recentExams = ref([])
+const loading = ref(false)
 
 const goTo = (path) => {
   router.push(path)
@@ -134,14 +126,65 @@ const getStatusType = (status) => {
   return EXAM_STATUS_COLORS[status] || 'info'
 }
 
-onMounted(() => {
-  // TODO: 从API获取统计数据
-  statistics.value = {
-    questionBankCount: 10,
-    questionCount: 500,
-    examCount: 20,
-    userCount: 100
+/**
+ * 加载系统统计数据
+ */
+const loadStatistics = async () => {
+  try {
+    loading.value = true
+
+    // 获取各模块的数量统计
+    const [bankRes, questionRes, examRes, userRes] = await Promise.all([
+      api.questionBank.page({ current: 1, size: 1 }),
+      api.question.page({ current: 1, size: 1 }),
+      api.exam.page({ current: 1, size: 1 }),
+      api.user.page({ current: 1, size: 1 })
+    ])
+
+    statistics.value = {
+      questionBankCount: bankRes.data?.total || 0,
+      questionCount: questionRes.data?.total || 0,
+      examCount: examRes.data?.total || 0,
+      userCount: userRes.data?.total || 0
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+    // 使用默认值，不显示错误提示
+    statistics.value = {
+      questionBankCount: 0,
+      questionCount: 0,
+      examCount: 0,
+      userCount: 0
+    }
+  } finally {
+    loading.value = false
   }
+}
+
+/**
+ * 加载最近的考试
+ */
+const loadRecentExams = async () => {
+  try {
+     const res = await api.exam.page({
+      current: 1,
+      size: 5,
+      sortField: 'startTime',
+      sortOrder: 'desc'
+    })
+
+    if (res.code === 200 && res.data?.records) {
+      recentExams.value = res.data.records
+    }
+  } catch (error) {
+    console.error('加载最近考试失败:', error)
+    recentExams.value = []
+  }
+}
+
+onMounted(() => {
+  loadStatistics()
+  loadRecentExams()
 })
 </script>
 
@@ -150,43 +193,6 @@ onMounted(() => {
   padding: 20px;
 }
 
-.stat-card {
-  position: relative;
-  overflow: hidden;
-}
-
-:deep(.stat-card .el-card__body) {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  margin-right: 20px;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
 
 .card-header {
   font-size: 16px;
@@ -199,7 +205,7 @@ onMounted(() => {
   gap: 12px;
 }
 
-.quick-links .el-button {
+.quick-links :deep(.el-button) {
   width: 100%;
   justify-content: flex-start;
 }

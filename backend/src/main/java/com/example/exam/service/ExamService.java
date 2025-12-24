@@ -7,6 +7,7 @@ import com.example.exam.common.enums.ExamStatus;
 import com.example.exam.dto.ExamDTO;
 import com.example.exam.dto.ExamMonitorDTO;
 import com.example.exam.dto.ExamStatisticsDTO;
+import com.example.exam.dto.ExamUserDTO;
 import com.example.exam.entity.exam.Exam;
 
 import java.time.LocalDateTime;
@@ -73,6 +74,24 @@ public interface ExamService extends IService<Exam> {
     List<Exam> getExamsByUser(Long userId, Long orgId);
 
     /**
+     * 获取当前学生的考试列表（包含考试状态、是否已参加等信息）
+     *
+     * @param userId 学生ID
+     * @param status 考试状态筛选
+     * @return 考试DTO列表
+     */
+    List<ExamDTO> getMyExams(Long userId, ExamStatus status);
+
+    /**
+     * 学生进入考试（创建考试会话）
+     *
+     * @param examId 考试ID
+     * @param userId 学生ID
+     * @return 考试会话ID
+     */
+    String enterExam(Long examId, Long userId);
+
+    /**
      * 复制考试
      *
      * @param examId   考试ID
@@ -80,5 +99,40 @@ public interface ExamService extends IService<Exam> {
      * @return 新考试ID
      */
     Long copyExam(Long examId, String newTitle);
+
+    /**
+     * 获取考试的考生列表
+     *
+     * @param examId 考试ID
+     * @return 考生列表
+     */
+    List<ExamUserDTO> getExamStudents(Long examId);
+
+    /**
+     * 添加考生到考试
+     *
+     * @param examId  考试ID
+     * @param userIds 用户ID列表
+     * @return 是否成功
+     */
+    boolean addStudentsToExam(Long examId, List<Long> userIds);
+
+    /**
+     * 从考试中移除考生
+     *
+     * @param examId 考试ID
+     * @param userId 用户ID
+     * @return 是否成功
+     */
+    boolean removeStudentFromExam(Long examId, Long userId);
+
+    /**
+     * 检查用户是否有权限参加考试
+     *
+     * @param examId 考试ID
+     * @param userId 用户ID
+     * @return 是否有权限
+     */
+    boolean checkExamPermission(Long examId, Long userId);
 }
 

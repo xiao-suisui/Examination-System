@@ -10,8 +10,8 @@ export default {
    */
   page(params) {
     return request({
-      url: '/api/question/page',
-      method: 'get',
+      url: `/question/page`,
+      method: `get`,
       params
     })
   },
@@ -21,8 +21,8 @@ export default {
    */
   list(params) {
     return request({
-      url: '/api/question/list',
-      method: 'get',
+      url: `/question/list`,
+      method: `get`,
       params
     })
   },
@@ -32,8 +32,8 @@ export default {
    */
   getById(id) {
     return request({
-      url: `/api/question/${id}`,
-      method: 'get'
+      url: `/question/${id}`,
+      method: `get`
     })
   },
 
@@ -42,8 +42,8 @@ export default {
    */
   create(data) {
     return request({
-      url: '/api/question',
-      method: 'post',
+      url: `/question`,
+      method: `post`,
       data
     })
   },
@@ -53,8 +53,8 @@ export default {
    */
   update(id, data) {
     return request({
-      url: `/api/question/${id}`,
-      method: 'put',
+      url: `/question/${id}`,
+      method: `put`,
       data
     })
   },
@@ -64,8 +64,8 @@ export default {
    */
   deleteById(id) {
     return request({
-      url: `/api/question/${id}`,
-      method: 'delete'
+      url: `/question/${id}`,
+      method: `delete`
     })
   },
 
@@ -74,8 +74,8 @@ export default {
    */
   batchDelete(ids) {
     return request({
-      url: '/api/question/batch',
-      method: 'delete',
+      url: `/question/batch`,
+      method: `delete`,
       data: ids
     })
   },
@@ -85,8 +85,8 @@ export default {
    */
   audit(id, data) {
     return request({
-      url: `/api/question/${id}/audit`,
-      method: 'post',
+      url: `/question/${id}/audit`,
+      method: `post`,
       data
     })
   },
@@ -100,8 +100,8 @@ export default {
     formData.append('bankId', bankId)
 
     return request({
-      url: '/api/question/import',
-      method: 'post',
+      url: `/question/import`,
+      method: `post`,
       data: formData,
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -114,11 +114,10 @@ export default {
    */
   exportQuestions(params) {
     return request({
-      url: '/api/question/export',
-      method: 'get',
+      url: `/question/export`,
+      method: `get`,
       params,
       responseType: 'blob'
     })
   }
 }
-

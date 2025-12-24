@@ -3,6 +3,7 @@ package com.example.exam.mapper.question;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.exam.entity.question.QuestionBank;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 题库表Mapper接口
@@ -26,7 +27,7 @@ public interface QuestionBankMapper extends BaseMapper<QuestionBank> {
      * @param bankId 题库ID
      * @return 统计信息
      */
-    @org.apache.ibatis.annotations.Select("SELECT " +
+    @Select("SELECT " +
             "bank_id AS bankId, " +
             "bank_name AS bankName, " +
             "(SELECT COUNT(*) FROM question WHERE bank_id = #{bankId} AND deleted = 0) AS totalQuestions, " +

@@ -11,7 +11,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 题目表实体类（核心）
@@ -42,6 +41,12 @@ public class Question implements Serializable {
     private Long questionId;
 
     /**
+     * 所属科目ID
+     */
+    @TableField("subject_id")
+    private Long subjectId;
+
+    /**
      * 题库ID
      */
     @TableField("bank_id")
@@ -60,9 +65,7 @@ public class Question implements Serializable {
     private String questionContent;
 
     /**
-     * 题型：SINGLE_CHOICE-单选，MULTIPLE_CHOICE-多选，
-     * INDEFINITE_CHOICE-不定项，TRUE_FALSE-判断，
-     * MATCHING-匹配，SORT-排序，FILL_BLANK-填空，SUBJECTIVE-主观
+     * 题型：1-单选，2-多选，3-不定项，4-判断，5-匹配，6-排序，7-填空，8-主观
      */
     @TableField("question_type")
     private QuestionType questionType;
@@ -74,7 +77,7 @@ public class Question implements Serializable {
     private BigDecimal defaultScore;
 
     /**
-     * 难度：EASY-简单，MEDIUM-中等，HARD-困难
+     * 难度：1-简单，2-中等，3-困难
      */
     @TableField("difficulty")
     private DifficultyType difficulty;
@@ -181,12 +184,6 @@ public class Question implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
-
-    /**
-     * 选项列表（非数据库字段，用于查询结果映射）
-     */
-    @TableField(exist = false)
-    private List<QuestionOption> options;
 
 }
 

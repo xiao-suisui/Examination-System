@@ -59,12 +59,18 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/modules/auth'
+import { usePermissionStore } from '@/stores/modules/permission'
 import { ElMessage } from 'element-plus'
 import { loginRules } from '@/utils/validate'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const permissionStore = usePermissionStore()
+
+// 调试：确保 authStore 正确初始化
+console.log('[Login] authStore 初始化:', authStore)
+console.log('[Login] authStore.login 类型:', typeof authStore.login)
 
 const loginFormRef = ref(null)
 const loading = ref(false)
@@ -83,13 +89,28 @@ const handleLogin = async () => {
 
     loading.value = true
     try {
-      await authStore.login(loginForm)
+      console.log('[Login] 开始登录...')
+      console.log('[Login] authStore:', authStore)
+      console.log('[Login] authStore.login:', authStore.login)
+
+      // 执行登录
+      await authStore.login({
+        username: loginForm.username,
+        password: loginForm.password
+      })
+
+      console.log('[Login] 登录成功，开始加载权限...')
+
+      // 登录成功后加载权限
+      await permissionStore.loadPermissions()
+      console.log('[Login] 权限加载完成')
 
       // 跳转到原来想访问的页面，或者首页
       const redirect = route.query.redirect || '/'
       router.push(redirect)
     } catch (error) {
       console.error('登录失败:', error)
+      ElMessage.error(error.message || '登录失败，请检查用户名和密码')
     } finally {
       loading.value = false
     }

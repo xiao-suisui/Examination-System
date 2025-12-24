@@ -55,6 +55,12 @@ public class ExamAnswer implements Serializable {
     private Long questionId;
 
     /**
+     * 题库ID（统计分析用）
+     */
+    @TableField("bank_id")
+    private Long bankId;
+
+    /**
      * 考生ID
      */
     @TableField("user_id")

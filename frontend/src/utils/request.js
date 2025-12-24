@@ -7,8 +7,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getToken, removeToken } from './auth'
 import router from '@/router'
 
+// 开发环境使用代理，生产环境使用完整 URL
+const baseURL = import.meta.env.DEV
+  ? '/api'  // 开发环境：通过 Vite 代理
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')  // 生产环境：直接访问后端
+
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'

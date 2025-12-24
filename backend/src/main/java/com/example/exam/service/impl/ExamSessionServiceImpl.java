@@ -101,7 +101,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean saveAnswer(Long sessionId, ExamAnswer answer) {
+    public boolean saveAnswer(String sessionId, ExamAnswer answer) {
         try {
             // TODO: 实现保存单个答案逻辑
             // 这里需要保存到exam_answer表
@@ -115,7 +115,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean saveAnswers(Long sessionId, List<ExamAnswer> answers) {
+    public boolean saveAnswers(String sessionId, List<ExamAnswer> answers) {
         try {
             // TODO: 实现批量保存答案逻辑
             log.info("批量保存答案: sessionId={}, count={}", sessionId, answers.size());
@@ -131,7 +131,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean submitExam(Long sessionId) {
+    public boolean submitExam(String sessionId) {
         try {
             ExamSession session = baseMapper.selectById(sessionId);
             if (session == null) {
@@ -167,7 +167,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean pauseExam(Long sessionId) {
+    public boolean pauseExam(String sessionId) {
         try {
             ExamSession session = baseMapper.selectById(sessionId);
             if (session == null) {
@@ -185,7 +185,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean resumeExam(Long sessionId) {
+    public boolean resumeExam(String sessionId) {
         try {
             ExamSession session = baseMapper.selectById(sessionId);
             if (session == null) {
@@ -202,7 +202,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
     }
 
     @Override
-    public Object getExamResult(Long sessionId) {
+    public Object getExamResult(String sessionId) {
         try {
             ExamSession session = baseMapper.selectById(sessionId);
             if (session == null) {
@@ -232,7 +232,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
     }
 
     @Override
-    public Long getRemainingTime(Long sessionId) {
+    public Long getRemainingTime(String sessionId) {
         try {
             ExamSession session = baseMapper.selectById(sessionId);
             if (session == null) {
@@ -262,7 +262,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean markQuestion(Long sessionId, Long questionId, String markType) {
+    public boolean markQuestion(String sessionId, Long questionId, String markType) {
         try {
             // TODO: 实现标记题目逻辑
             log.info("标记题目: sessionId={}, questionId={}, markType={}",
@@ -307,7 +307,7 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
                 log.warn("切屏次数超过限制，强制提交: sessionId={}, count={}, limit={}",
                         sessionId, newCount, exam.getCutScreenLimit());
                 // 自动提交
-                submitExam(Long.valueOf(sessionId));
+                submitExam(sessionId);
             }
 
             return newCount;

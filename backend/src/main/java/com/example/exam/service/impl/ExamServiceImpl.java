@@ -12,6 +12,7 @@ import com.example.exam.dto.ExamStatisticsDTO;
 import com.example.exam.entity.exam.Exam;
 import com.example.exam.entity.exam.ExamSession;
 import com.example.exam.entity.paper.Paper;
+import com.example.exam.converter.ExamConverter;
 import com.example.exam.mapper.exam.ExamMapper;
 import com.example.exam.mapper.exam.ExamSessionMapper;
 import com.example.exam.mapper.paper.PaperMapper;
@@ -42,6 +43,9 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
     private final ExamMapper examMapper;
     private final ExamSessionMapper examSessionMapper;
     private final PaperMapper paperMapper;
+    private final ExamConverter examConverter;
+    private final com.example.exam.mapper.exam.ExamUserMapper examUserMapper;
+    private final com.example.exam.mapper.system.SysUserMapper userMapper;
 
     @Override
     public IPage<Exam> pageExams(Page<Exam> page, ExamStatus status, String keyword,
@@ -64,33 +68,8 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
 
         // 转换为DTO
         List<ExamDTO> dtoList = examResult.getRecords().stream().map(exam -> {
-            ExamDTO dto = ExamDTO.builder()
-                    .examId(exam.getExamId())
-                    .examName(exam.getExamName())
-                    .description(exam.getDescription())
-                    .coverImage(exam.getCoverImage())
-                    .paperId(exam.getPaperId())
-                    .startTime(exam.getStartTime())
-                    .endTime(exam.getEndTime())
-                    .duration(exam.getDuration())
-                    .examRangeType(exam.getExamRangeType())
-                    .examRangeIds(exam.getExamRangeIds())
-                    .examStatus(exam.getExamStatus())
-                    .cutScreenLimit(exam.getCutScreenLimit())
-                    .cutScreenTimer(exam.getCutScreenTimer())
-                    .forbidCopy(exam.getForbidCopy())
-                    .singleDevice(exam.getSingleDevice())
-                    .shuffleQuestions(exam.getShuffleQuestions())
-                    .shuffleOptions(exam.getShuffleOptions())
-                    .antiPlagiarism(exam.getAntiPlagiarism())
-                    .plagiarismThreshold(exam.getPlagiarismThreshold())
-                    .remindTime(exam.getRemindTime())
-                    .showScoreImmediately(exam.getShowScoreImmediately())
-                    .orgId(exam.getOrgId())
-                    .createUserId(exam.getCreateUserId())
-                    .createTime(exam.getCreateTime())
-                    .updateTime(exam.getUpdateTime())
-                    .build();
+            // 使用Converter进行基础转换
+            ExamDTO dto = examConverter.toDTO(exam);
 
             // 查询试卷名称
             if (exam.getPaperId() != null) {
@@ -100,13 +79,20 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
                 }
             }
 
+            // 设置状态名称
+            if (exam.getExamStatus() != null) {
+                dto.setExamStatusName(exam.getExamStatus().getName());
+            }
+
             // 查询参与人数和已提交人数
             LambdaQueryWrapper<ExamSession> sessionWrapper = new LambdaQueryWrapper<>();
             sessionWrapper.eq(ExamSession::getExamId, exam.getExamId());
             Long totalCount = examSessionMapper.selectCount(sessionWrapper);
-            dto.setParticipantCount(totalCount != null ? totalCount.intValue() : 0);
+            dto.setTotalParticipants(totalCount != null ? totalCount.intValue() : 0);
 
-            sessionWrapper.eq(ExamSession::getSessionStatus, ExamSessionStatus.SUBMITTED);
+            sessionWrapper.clear();
+            sessionWrapper.eq(ExamSession::getExamId, exam.getExamId())
+                         .eq(ExamSession::getSessionStatus, ExamSessionStatus.SUBMITTED);
             Long submittedCount = examSessionMapper.selectCount(sessionWrapper);
             dto.setSubmittedCount(submittedCount != null ? submittedCount.intValue() : 0);
 
@@ -328,7 +314,13 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
 
     @Override
     public List<Exam> getExamsByUser(Long userId, Long orgId) {
-        return examMapper.selectExamsByUser(userId, orgId);
+        LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Exam::getExamStatus, ExamStatus.PUBLISHED, ExamStatus.IN_PROGRESS)
+               .and(w -> w.apply("exam_range_type = 1 AND FIND_IN_SET({0}, exam_range_ids) > 0", userId)
+                          .or()
+                          .apply("exam_range_type IN (2, 3) AND FIND_IN_SET({0}, exam_range_ids) > 0", orgId))
+               .orderByDesc(Exam::getStartTime);
+        return this.list(wrapper);
     }
 
     @Override
@@ -376,5 +368,210 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
             throw new RuntimeException("复制考试失败: " + e.getMessage());
         }
     }
-}
 
+    @Override
+    public List<ExamDTO> getMyExams(Long userId, ExamStatus status) {
+        LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(status != null, Exam::getExamStatus, status)
+               .orderByDesc(Exam::getCreateTime);
+
+        List<Exam> exams = this.list(wrapper);
+
+        // 转换为 DTO 并添加学生相关信息
+        return exams.stream()
+                .map(exam -> {
+                    ExamDTO dto = examConverter.toDTO(exam);
+
+                    // 查询学生是否已参加
+                    LambdaQueryWrapper<ExamSession> sessionWrapper = new LambdaQueryWrapper<>();
+                    sessionWrapper.eq(ExamSession::getExamId, exam.getExamId())
+                                  .eq(ExamSession::getUserId, userId);
+                    ExamSession session = examSessionMapper.selectOne(sessionWrapper);
+
+                    if (session != null) {
+                        dto.setHasJoined(true);
+                        dto.setSessionId(session.getSessionId());
+                        dto.setSessionStatus(session.getSessionStatus());
+                    } else {
+                        dto.setHasJoined(false);
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String enterExam(Long examId, Long userId) {
+        try {
+            // 1. 验证考试是否存在
+            Exam exam = this.getById(examId);
+            if (exam == null) {
+                log.error("考试不存在，examId: {}", examId);
+                return null;
+            }
+
+            // 2. 验证考试状态
+            if (exam.getExamStatus() != ExamStatus.IN_PROGRESS) {
+                log.error("考试未开始或已结束，examId: {}, status: {}", examId, exam.getExamStatus());
+                return null;
+            }
+
+            // 3. 检查是否已有会话
+            LambdaQueryWrapper<ExamSession> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ExamSession::getExamId, examId)
+                   .eq(ExamSession::getUserId, userId);
+            ExamSession existingSession = examSessionMapper.selectOne(wrapper);
+
+            if (existingSession != null) {
+                // 已有会话，返回现有会话ID
+                log.info("学生已有考试会话，sessionId: {}", existingSession.getSessionId());
+                return existingSession.getSessionId();
+            }
+
+            // 4. 创建新会话
+            ExamSession newSession = new ExamSession();
+            newSession.setSessionId(generateSessionId());
+            newSession.setExamId(examId);
+            newSession.setUserId(userId);
+            newSession.setSessionStatus(ExamSessionStatus.IN_PROGRESS);
+            newSession.setStartTime(LocalDateTime.now());
+            newSession.setTotalScore(BigDecimal.ZERO);
+
+            if (examSessionMapper.insert(newSession) > 0) {
+                log.info("创建考试会话成功，sessionId: {}, examId: {}, userId: {}",
+                        newSession.getSessionId(), examId, userId);
+                return newSession.getSessionId();
+            } else {
+                log.error("创建考试会话失败");
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("进入考试失败", e);
+            throw new RuntimeException("进入考试失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成会话ID
+     */
+    private String generateSessionId() {
+        return "S" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+    }
+
+    @Override
+    public List<com.example.exam.dto.ExamUserDTO> getExamStudents(Long examId) {
+        try {
+            // 查询考试的所有考生信息
+            LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(com.example.exam.entity.exam.ExamUser::getExamId, examId);
+            List<com.example.exam.entity.exam.ExamUser> examUsers = examUserMapper.selectList(wrapper);
+
+            // 转换为 DTO
+            return examUsers.stream().map(examUser -> {
+                com.example.exam.dto.ExamUserDTO dto = new com.example.exam.dto.ExamUserDTO();
+                dto.setExamUserId(examUser.getId());
+                dto.setExamId(examUser.getExamId());
+                dto.setUserId(examUser.getUserId());
+                dto.setExamStatus(examUser.getExamStatus());
+                dto.setFinalScore(examUser.getFinalScore());
+                dto.setPassStatus(examUser.getPassStatus());
+                dto.setReexamCount(examUser.getReexamCount());
+                dto.setCreateTime(examUser.getCreateTime());
+
+                // 获取用户信息
+                com.example.exam.entity.system.SysUser user = userMapper.selectById(examUser.getUserId());
+                if (user != null) {
+                    dto.setUserName(user.getUsername());
+                    dto.setRealName(user.getRealName());
+                }
+
+                return dto;
+            }).collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("获取考试考生列表失败", e);
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean addStudentsToExam(Long examId, List<Long> userIds) {
+        try {
+            // 验证考试是否存在
+            Exam exam = this.getById(examId);
+            if (exam == null) {
+                log.error("考试不存在，examId: {}", examId);
+                return false;
+            }
+
+            // 批量添加考生
+            for (Long userId : userIds) {
+                // 检查是否已存在
+                LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(com.example.exam.entity.exam.ExamUser::getExamId, examId)
+                       .eq(com.example.exam.entity.exam.ExamUser::getUserId, userId);
+                Long count = examUserMapper.selectCount(wrapper);
+
+                if (count == 0) {
+                    // 不存在则添加
+                    com.example.exam.entity.exam.ExamUser examUser = new com.example.exam.entity.exam.ExamUser();
+                    examUser.setExamId(examId);
+                    examUser.setUserId(userId);
+                    examUser.setExamStatus(0); // 未参考
+                    examUser.setReexamCount(0);
+                    examUser.setPassStatus(0); // 不及格
+                    examUserMapper.insert(examUser);
+                    log.info("添加考生成功，examId: {}, userId: {}", examId, userId);
+                } else {
+                    log.info("考生已存在，跳过添加，examId: {}, userId: {}", examId, userId);
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            log.error("添加考生失败", e);
+            throw new RuntimeException("添加考生失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeStudentFromExam(Long examId, Long userId) {
+        try {
+            // 删除考生关联
+            LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(com.example.exam.entity.exam.ExamUser::getExamId, examId)
+                   .eq(com.example.exam.entity.exam.ExamUser::getUserId, userId);
+            int result = examUserMapper.delete(wrapper);
+
+            if (result > 0) {
+                log.info("移除考生成功，examId: {}, userId: {}", examId, userId);
+                return true;
+            } else {
+                log.warn("考生不存在或已移除，examId: {}, userId: {}", examId, userId);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("移除考生失败", e);
+            throw new RuntimeException("移除考生失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean checkExamPermission(Long examId, Long userId) {
+        try {
+            // 检查考生是否在考试列表中
+            LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(com.example.exam.entity.exam.ExamUser::getExamId, examId)
+                   .eq(com.example.exam.entity.exam.ExamUser::getUserId, userId);
+            Long count = examUserMapper.selectCount(wrapper);
+
+            return count > 0;
+        } catch (Exception e) {
+            log.error("检查考试权限失败", e);
+            return false;
+        }
+    }
+}

@@ -1,7 +1,11 @@
 package com.example.exam.controller;
 
+import com.example.exam.annotation.OperationLog;
 import com.example.exam.common.result.Result;
+import com.example.exam.entity.system.SysRole;
 import com.example.exam.entity.system.SysUser;
+import com.example.exam.filter.JwtAuthenticationFilter;
+import com.example.exam.service.SysPermissionService;
 import com.example.exam.service.UserService;
 import com.example.exam.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 认证Controller
@@ -32,10 +37,11 @@ public class AuthController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
-    private final com.example.exam.filter.JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final SysPermissionService permissionService;
 
     @Operation(summary = "用户登录", description = "用户名密码登录，返回JWT Token")
-    @com.example.exam.annotation.OperationLog(module = "认证模块", type = "登录", description = "用户登录")
+    @OperationLog(module = "认证模块", type = "登录", description = "用户登录")
     @PostMapping("/login")
     public Result<Map<String, Object>> login(
             @Parameter(description = "登录信息", required = true) @Valid @RequestBody com.example.exam.dto.LoginDTO loginDTO,
@@ -54,13 +60,31 @@ public class AuthController {
             return Result.error("账号已被禁用");
         }
 
-        // 生成Token
-        String token = jwtUtil.generateToken(user.getUsername(), user.getUserId());
+        // 生成Token（包含roleId信息）
+        String token = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRoleId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId());
 
         // 更新最后登录时间和IP
         String ip = getClientIp(request);
         userService.updateLastLogin(user.getUserId(), ip);
+
+        // 获取用户权限
+        Set<String> permissions = permissionService.getUserPermissionCodes(user.getUserId());
+
+        // 获取角色信息
+        String roleCode = null;
+        String roleName = null;
+        if (user.getRoleId() != null) {
+            try {
+                com.example.exam.entity.system.SysRole role = userService.getRoleById(user.getRoleId());
+                if (role != null) {
+                    roleCode = role.getRoleCode();
+                    roleName = role.getRoleName();
+                }
+            } catch (Exception e) {
+                log.warn("获取角色信息失败: roleId={}", user.getRoleId(), e);
+            }
+        }
 
         // 返回结果
         Map<String, Object> result = new HashMap<>();
@@ -70,12 +94,15 @@ public class AuthController {
         result.put("username", user.getUsername());
         result.put("realName", user.getRealName());
         result.put("roleId", user.getRoleId());
+        result.put("roleCode", roleCode);  // 添加角色编码
+        result.put("roleName", roleName);  // 添加角色名称
+        result.put("permissions", permissions);  // 添加权限信息
 
         return Result.success("登录成功", result);
     }
 
     @Operation(summary = "用户登出", description = "用户登出，将Token加入黑名单")
-    @com.example.exam.annotation.OperationLog(module = "认证模块", type = "登出", description = "用户登出", recordParams = false)
+    @OperationLog(module = "认证模块", type = "登出", description = "用户登出", recordParams = false)
     @PostMapping("/logout")
     public Result<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
         // 提取Token并加入黑名单
@@ -147,6 +174,24 @@ public class AuthController {
                 return Result.error("用户不存在");
             }
 
+            // 获取用户权限
+            Set<String> permissions = permissionService.getUserPermissionCodes(user.getUserId());
+
+            // 获取角色信息
+            String roleCode = null;
+            String roleName = null;
+            if (user.getRoleId() != null) {
+                try {
+                    SysRole role = userService.getRoleById(user.getRoleId());
+                    if (role != null) {
+                        roleCode = role.getRoleCode();
+                        roleName = role.getRoleName();
+                    }
+                } catch (Exception e) {
+                    log.warn("获取角色信息失败: roleId={}", user.getRoleId(), e);
+                }
+            }
+
             Map<String, Object> result = new HashMap<>();
             result.put("userId", user.getUserId());
             result.put("username", user.getUsername());
@@ -154,9 +199,12 @@ public class AuthController {
             result.put("email", user.getEmail());
             result.put("phone", user.getPhone());
             result.put("roleId", user.getRoleId());
+            result.put("roleCode", roleCode);  // 添加角色编码
+            result.put("roleName", roleName);  // 添加角色名称
             result.put("avatar", user.getAvatar());
             result.put("orgId", user.getOrgId());
             result.put("status", user.getStatus());
+            result.put("permissions", permissions);  // 添加权限信息
             // 不返回密码等敏感信息
 
             return Result.success("获取成功", result);

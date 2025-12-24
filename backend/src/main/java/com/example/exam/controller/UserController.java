@@ -1,5 +1,7 @@
 package com.example.exam.controller;
 
+import com.example.exam.annotation.OperationLog;
+import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.enums.AuditStatus;
 import com.example.exam.common.enums.UserStatus;
 import com.example.exam.common.result.Result;
@@ -29,14 +31,15 @@ public class UserController {
     private final UserService userService;
 
     @Operation(summary = "分页查询用户", description = "查询用户列表，支持关键词搜索")
-    @com.example.exam.annotation.OperationLog(module = "用户管理", type = "查询", description = "分页查询用户", recordParams = false)
+    @RequirePermission(value = "user:view", desc = "查看用户")
+    @OperationLog(module = "用户管理", type = "查询", description = "分页查询用户", recordParams = false)
     @GetMapping("/page")
     public Result<com.baomidou.mybatisplus.core.metadata.IPage<com.example.exam.dto.UserDTO>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
             @Parameter(description = "用户名") @RequestParam(required = false) String username,
             @Parameter(description = "真实姓名") @RequestParam(required = false) String realName,
-            @Parameter(description = "状态") @RequestParam(required = false) Integer status) {
+            @Parameter(description = "状态：0-禁用，1-启用") @RequestParam(required = false) com.example.exam.common.enums.UserStatus status) {
 
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<com.example.exam.dto.UserDTO> page =
             new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
@@ -48,7 +51,8 @@ public class UserController {
     }
 
     @Operation(summary = "创建用户", description = "管理员创建新用户")
-    @com.example.exam.annotation.OperationLog(module = "用户管理", type = "创建", description = "创建用户")
+    @RequirePermission(value = "user:create", desc = "创建用户")
+    @OperationLog(module = "用户管理", type = "创建", description = "创建用户")
     @PostMapping
     public Result<Void> create(@Parameter(description = "用户信息", required = true) @RequestBody SysUser user) {
         // 设置默认org_id
@@ -60,7 +64,7 @@ public class UserController {
     }
 
     @Operation(summary = "用户注册", description = "新用户注册，需要填写用户名、密码、真实姓名等信息")
-    @com.example.exam.annotation.OperationLog(module = "用户管理", type = "注册", description = "用户注册")
+    @OperationLog(module = "用户管理", type = "注册", description = "用户注册")
     @PostMapping("/register")
     public Result<Void> register(
             @Parameter(description = "注册信息", required = true) @Valid @RequestBody com.example.exam.dto.RegisterDTO registerDTO) {
@@ -74,8 +78,8 @@ public class UserController {
         user.setPhone(registerDTO.getPhone());
 
         // 设置默认值
-        user.setStatus(UserStatus.fromCode(1));          // 默认启用
-        user.setAuditStatus(AuditStatus.fromCode(0));     // 默认草稿
+        user.setStatus(UserStatus.of(1));          // 默认启用
+        user.setAuditStatus(AuditStatus.of(0));     // 默认草稿
         user.setRoleId(3L);         // 默认学生角色
         user.setOrgId(1L);          // 默认组织
 
@@ -84,6 +88,7 @@ public class UserController {
     }
 
     @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户详细信息")
+    @RequirePermission(value = "user:view", desc = "查看用户")
     @GetMapping("/username/{username}")
     public Result<SysUser> getUserByUsername(
             @Parameter(description = "用户名", required = true) @PathVariable String username) {
@@ -92,6 +97,7 @@ public class UserController {
     }
 
     @Operation(summary = "根据ID查询用户", description = "根据用户ID查询用户详细信息")
+    @RequirePermission(value = "user:view", desc = "查看用户")
     @GetMapping("/{id:[0-9]+}")
     public Result<SysUser> getUserById(
             @Parameter(description = "用户ID", required = true) @PathVariable Long id) {
@@ -100,18 +106,26 @@ public class UserController {
     }
 
     @Operation(summary = "更新用户信息", description = "更新用户的个人信息")
-    @com.example.exam.annotation.OperationLog(module = "用户管理", type = "更新", description = "更新用户信息")
+    @RequirePermission(value = "user:update", desc = "更新用户")
+    @OperationLog(module = "用户管理", type = "更新", description = "更新用户信息")
     @PutMapping("/{id:[0-9]+}")
     public Result<Void> updateUser(
             @Parameter(description = "用户ID", required = true) @PathVariable Long id,
             @Parameter(description = "用户信息", required = true) @RequestBody SysUser user) {
         user.setUserId(id);
+
+        // 如果密码为空或null，则不更新密码字段
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            user.setPassword(null); // 设置为null，MyBatis Plus会忽略null值字段
+        }
+
         boolean success = userService.updateById(user);
         return success ? Result.success() : Result.error("更新失败");
     }
 
     @Operation(summary = "删除用户", description = "逻辑删除用户（软删除）")
-    @com.example.exam.annotation.OperationLog(module = "用户管理", type = "删除", description = "删除用户")
+    @RequirePermission(value = "user:delete", desc = "删除用户")
+    @OperationLog(module = "用户管理", type = "删除", description = "删除用户")
     @DeleteMapping("/{id:[0-9]+}")
     public Result<Void> deleteUser(
             @Parameter(description = "用户ID", required = true) @PathVariable Long id) {
@@ -120,7 +134,7 @@ public class UserController {
     }
 
     @Operation(summary = "更新个人资料", description = "更新当前登录用户的个人资料")
-    @com.example.exam.annotation.OperationLog(module = "个人中心", type = "更新", description = "更新个人资料")
+    @OperationLog(module = "个人中心", type = "更新", description = "更新个人资料")
     @PutMapping("/profile")
     public Result<Void> updateProfile(@Parameter(description = "个人资料", required = true) @RequestBody com.example.exam.dto.ProfileDTO profileDTO) {
         // 获取当前登录用户ID
@@ -137,7 +151,7 @@ public class UserController {
         user.setEmail(profileDTO.getEmail());
         // 将Integer转换为Gender枚举
         if (profileDTO.getGender() != null) {
-            user.setGender(com.example.exam.common.enums.Gender.fromCode(profileDTO.getGender()));
+            user.setGender(com.example.exam.common.enums.Gender.of(profileDTO.getGender()));
         }
 
         boolean success = userService.updateById(user);
@@ -145,7 +159,7 @@ public class UserController {
     }
 
     @Operation(summary = "修改密码", description = "修改当前登录用户的密码")
-    @com.example.exam.annotation.OperationLog(module = "个人中心", type = "更新", description = "修改密码")
+    @OperationLog(module = "个人中心", type = "更新", description = "修改密码")
     @PostMapping("/update-password")
     public Result<Void> updatePassword(@Parameter(description = "密码信息", required = true) @RequestBody com.example.exam.dto.UpdatePasswordDTO updatePasswordDTO) {
         // 获取当前登录用户ID
@@ -160,7 +174,7 @@ public class UserController {
     }
 
     @Operation(summary = "上传头像", description = "上传当前用户的头像")
-    @com.example.exam.annotation.OperationLog(module = "个人中心", type = "更新", description = "上传头像")
+    @OperationLog(module = "个人中心", type = "更新", description = "上传头像")
     @PostMapping("/avatar")
     public Result<java.util.Map<String, String>> uploadAvatar(@Parameter(description = "头像文件", required = true) @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         // 获取当前登录用户ID

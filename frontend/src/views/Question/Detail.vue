@@ -30,28 +30,35 @@
             </el-descriptions-item>
             <el-descriptions-item label="题目类型">
               <el-tag :type="getQuestionTypeColor(question.questionType)">
-                {{ getQuestionTypeName(question.questionType) }}
+                {{ question.questionTypeName || getQuestionTypeName(question.questionType) || '未知' }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="所属题库">
               {{ question.bankName || '未知' }}
             </el-descriptions-item>
             <el-descriptions-item label="难度">
-              <el-rate :model-value="Number(question.difficulty) || 0" :max="3" disabled show-score />
+              <el-rate
+                :model-value="question.difficulty || 0"
+                :max="3"
+                disabled
+              />
+              <span style="margin-left: 10px;">
+                {{ question.difficultyName || getDifficultyName(question.difficulty) || '未知' }}
+              </span>
             </el-descriptions-item>
             <el-descriptions-item label="分值">
-              {{ question.defaultScore }} 分
+              {{ question.defaultScore || 0 }} 分
             </el-descriptions-item>
             <el-descriptions-item label="审核状态">
               <el-tag :type="getAuditStatusColor(question.auditStatus)">
-                {{ getAuditStatusName(question.auditStatus) }}
+                {{ question.auditStatusName || getAuditStatusName(question.auditStatus) || '未知' }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="创建时间">
-              {{ question.createTime }}
+              {{ question.createTime || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="更新时间">
-              {{ question.updateTime }}
+              {{ question.updateTime || '-' }}
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -162,20 +169,39 @@ const loading = ref(false)
 const question = ref({})
 const usageRecords = ref([])
 
+// 获取难度名称
+const getDifficultyName = (difficulty) => {
+  if (!difficulty) return '未知'
+  const difficultyMap = {
+    1: '简单',
+    2: '中等',
+    3: '困难'
+  }
+  return difficultyMap[difficulty] || '未知'
+}
+
 // 加载题目详情
 const loadQuestionDetail = async () => {
   loading.value = true
   try {
     const questionId = route.params.id
+    console.log('[Detail] 加载题目详情，ID:', questionId)
+
     const res = await questionApi.getById(questionId)
+    console.log('[Detail] 题目详情响应:', res)
+
     if (res.code === 200) {
       question.value = res.data
+      console.log('[Detail] 题目数据:', question.value)
+      console.log('[Detail] 选项数据:', question.value.options)
+
       // TODO: 加载使用记录
       // loadUsageRecords(questionId)
     } else {
       ElMessage.error(res.message || '加载失败')
     }
   } catch (error) {
+    console.error('[Detail] 加载失败:', error)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
@@ -189,7 +215,8 @@ const goBack = () => {
 
 // 编辑
 const handleEdit = () => {
-  router.push(`/admin/question/edit/${question.value.questionId}`)
+  // 回到题目列表页，触发编辑对话框
+  router.push({ name: 'Question', query: { edit: question.value.questionId } })
 }
 
 // 删除
@@ -201,14 +228,30 @@ const handleDelete = async () => {
       { type: 'warning' }
     )
 
+    console.log('开始删除题目，ID:', question.value.questionId)
     const res = await questionApi.deleteById(question.value.questionId)
-    if (res.code === 200) {
+    console.log('删除响应:', res)
+
+    if (res && res.code === 200) {
       ElMessage.success('删除成功')
-      router.back()
+      // 延迟返回，确保消息显示
+      setTimeout(() => {
+        router.back()
+      }, 500)
+    } else {
+      // 处理失败情况
+      const errorMsg = res?.message || res?.msg || '删除失败'
+      console.error('删除失败:', errorMsg, res)
+      ElMessage.error(errorMsg)
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+    // 区分用户取消和真实错误
+    if (error === 'cancel') {
+      console.log('用户取消删除')
+    } else {
+      console.error('删除异常:', error)
+      const errorMsg = error?.response?.data?.message || error?.message || '删除失败'
+      ElMessage.error(errorMsg)
     }
   }
 }

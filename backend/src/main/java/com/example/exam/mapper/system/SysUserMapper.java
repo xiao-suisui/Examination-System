@@ -48,19 +48,5 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
      */
     @Select("SELECT * FROM sys_user WHERE email = #{email} AND deleted = 0")
     SysUser selectByEmail(@Param("email") String email);
-
-    /**
-     * 分页查询用户DTO（包含角色名称和组织名称）
-     *
-     * @param page     分页对象
-     * @param username 用户名（可选）
-     * @param realName 真实姓名（可选）
-     * @param status   状态（可选）
-     * @return 用户DTO分页数据
-     */
-    IPage<UserDTO> selectUserDTOPage(Page<?> page,
-                                     @Param("username") String username,
-                                     @Param("realName") String realName,
-                                     @Param("status") Integer status);
 }
 

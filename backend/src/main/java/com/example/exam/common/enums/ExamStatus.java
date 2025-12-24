@@ -57,15 +57,20 @@ public enum ExamStatus {
      * 根据编码获取枚举
      *
      * @param code 状态编码
-     * @return 考试状态枚举，未找到则返回null
+     * @return 考试状态枚举
+     * @throws IllegalArgumentException 如果编码无效
      */
-    public static ExamStatus fromCode(int code) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public static ExamStatus of(Integer code) {
+        if (code == null) {
+            return null;
+        }
         for (ExamStatus status : values()) {
             if (status.getCode() == code) {
                 return status;
             }
         }
-        return null;
+        throw new IllegalArgumentException("无效的考试状态编码: " + code);
     }
 
     /**

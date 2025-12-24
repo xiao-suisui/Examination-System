@@ -11,10 +11,10 @@ export default {
    * @param {number} bankId 题库ID
    * @returns {Promise}
    */
-  getKnowledgeTree(bankId) {
+  getTree(bankId) {
     return request({
-      url: '/api/knowledge-point/tree',
-      method: 'get',
+      url: `/knowledge-point/tree`,
+      method: `get`,
       params: { bankId }
     })
   },
@@ -24,10 +24,10 @@ export default {
    * @param {number} id 知识点ID
    * @returns {Promise}
    */
-  getKnowledgePointById(id) {
+  getById(id) {
     return request({
-      url: `/api/knowledge-point/${id}`,
-      method: 'get'
+      url: `/knowledge-point/${id}`,
+      method: `get`
     })
   },
 
@@ -36,10 +36,10 @@ export default {
    * @param {Object} data 知识点信息
    * @returns {Promise}
    */
-  createKnowledgePoint(data) {
+  create(data) {
     return request({
-      url: '/api/knowledge-point',
-      method: 'post',
+      url: `/knowledge-point`,
+      method: `post`,
       data
     })
   },
@@ -50,10 +50,10 @@ export default {
    * @param {Object} data 知识点信息
    * @returns {Promise}
    */
-  updateKnowledgePoint(id, data) {
+  update(id, data) {
     return request({
-      url: `/api/knowledge-point/${id}`,
-      method: 'put',
+      url: `/knowledge-point/${id}`,
+      method: `put`,
       data
     })
   },
@@ -63,10 +63,10 @@ export default {
    * @param {number} id 知识点ID
    * @returns {Promise}
    */
-  deleteKnowledgePoint(id) {
+  deleteById(id) {
     return request({
-      url: `/api/knowledge-point/${id}`,
-      method: 'delete'
+      url: `/knowledge-point/${id}`,
+      method: `delete`
     })
   },
 
@@ -76,10 +76,10 @@ export default {
    * @param {Object} data {targetParentId, position}
    * @returns {Promise}
    */
-  moveKnowledgePoint(id, data) {
+  move(id, data) {
     return request({
-      url: `/api/knowledge-point/${id}/move`,
-      method: 'post',
+      url: `/knowledge-point/${id}/move`,
+      method: `post`,
       data
     })
   }

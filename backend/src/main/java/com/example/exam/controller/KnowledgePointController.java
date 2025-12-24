@@ -31,7 +31,7 @@ public class KnowledgePointController {
     private final KnowledgePointService knowledgePointService;
 
     @Operation(summary = "获取知识点树", description = "获取树形结构的知识点列表")
-    @OperationLog(module = "知识点管理", type = "查询", description = "获取知识点树", recordParams = false)
+    @OperationLog(module = "知识点管理", type = "创建", description = "获取知识点树", recordParams = false)
     @GetMapping("/tree")
     public Result<List<KnowledgePoint>> getTree(
             @Parameter(description = "组织ID（可选）") @RequestParam(required = false) Long orgId) {
