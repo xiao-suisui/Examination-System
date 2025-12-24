@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 答题记录表实体类
  *
  * 模块：考试管理模块（exam-exam）
- * 职责：管理考生答题记录（答案、得分、批改）
+ * 职责：管理考生答题记录
  * 表名：exam_answer
  *
  * @author Exam System
