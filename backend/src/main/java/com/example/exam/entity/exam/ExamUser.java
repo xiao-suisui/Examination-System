@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 /**
  * 考试考生关联表实体类
  *
- * 模块：考试管理模块（exam-exam）
+ * 模块：考试管理模块
  * 职责：管理考试与考生的关联关系
  * 表名：exam_user
  *
