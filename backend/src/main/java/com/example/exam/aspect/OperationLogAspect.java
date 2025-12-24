@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 
 /**
  * 操作日志AOP切面
- * 自动记录带有@OperationLog注解的方法的操作日志
+ * 自动记录带有@OperationLog注解方法的操作日志
  *
  * @author Exam System
  * @version 2.0
