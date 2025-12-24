@@ -23,6 +23,10 @@ import java.util.Map;
 public class JwtUtil {
 
     /**
+     * 修改内容
+     */
+
+    /**
      * JWT密钥
      */
     @Value("${jwt.secret:exam-system-secret-key-for-jwt-token-generation-2025}")
