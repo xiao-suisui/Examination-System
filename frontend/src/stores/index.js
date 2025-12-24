@@ -1,5 +1,5 @@
 /**
- * Pinia Store 入口文件
+ * Pinia Store
  */
 
 import { createPinia } from 'pinia'
