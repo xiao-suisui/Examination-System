@@ -20,7 +20,7 @@ import java.util.List;
  * @version 2.0
  * @since 2025-11-06
  */
-@Tag(name = "阅卷管理", description = "主观题人工阅卷、成绩复核等功能")
+@Tag(name = "阅卷管理", description = "主观题人工阅卷、成绩复核功能")
 @RestController
 @RequestMapping("/api/grading")
 @RequiredArgsConstructor
