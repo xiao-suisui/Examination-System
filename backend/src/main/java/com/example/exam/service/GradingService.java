@@ -21,7 +21,7 @@ public interface GradingService {
     IPage<ExamAnswer> getPendingAnswers(Page<ExamAnswer> page, Long examId, Long questionId, Long teacherId);
 
     /**
-     * 阅卷
+     * 阅卷管理
      */
     boolean gradeAnswer(Long answerId, Double score, String comment, Long teacherId);
 
