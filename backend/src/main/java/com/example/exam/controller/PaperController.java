@@ -119,8 +119,6 @@ public class PaperController {
     @Operation(summary = "复制试卷", description = "复制现有试卷生成新试卷")
     @PostMapping("/{id}/copy")
     public Result<Long> copy(
-
-
             @Parameter(description = "原试卷ID", required = true) @PathVariable Long id,
             @Parameter(description = "新试卷标题", required = true) @RequestParam String newTitle) {
         Long newPaperId = paperService.copyPaper(id, newTitle);
