@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.*;
 public class QuestionController {
 
     private final QuestionService questionService;
-    private final com.example.exam.service.UserService userService;
     private final com.example.exam.converter.QuestionConverter questionConverter;
 
     @Operation(summary = "分页查询题目", description = "支持多条件筛选的题目分页查询（题库、题型、难度、审核状态、知识点、科目）")
@@ -94,22 +93,8 @@ public class QuestionController {
         // 使用 MapStruct 转换DTO为实体（自动处理枚举类型转换和字段映射）
         Question question = questionConverter.fromSaveDTO(dto);
 
-        // 设置创建人ID和组织ID（从当前登录用户获取）
-        Long currentUserId = getCurrentUserId();
-        Long currentOrgId = getCurrentUserOrgId();
-
-        question.setCreateUserId(currentUserId);
-        if (question.getOrgId() == null) {
-            question.setOrgId(currentOrgId);
-        }
-
-        // 自动设置科目ID（如果未提供）
-        if (question.getSubjectId() == null) {
-            Long currentSubjectId = getCurrentUserSubjectId();
-            if (currentSubjectId != null) {
-                question.setSubjectId(currentSubjectId);
-            }
-        }
+        // 注意：createUserId 和 orgId 已由 MyBatis-Plus 自动填充，无需手动设置
+        // 注意：subjectId 应由前端传入或在业务逻辑中设置
 
         // 设置默认状态
         if (question.getAuditStatus() == null) {
@@ -180,104 +165,6 @@ public class QuestionController {
         AuditStatus auditStatusEnum = AuditStatus.of(auditStatus);
         boolean success = questionService.auditQuestion(id, auditStatusEnum, remark, auditorId);
         return success ? Result.success() : Result.error("审核失败");
-    }
-
-    /**
-     * 获取当前登录用户ID
-     * 从Spring Security上下文或JWT Token中获取
-     */
-    private Long getCurrentUserId() {
-        try {
-            // 尝试从Spring Security上下文获取
-            org.springframework.security.core.Authentication authentication =
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-
-            if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                    String username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-                    // 通过username查询用户ID
-                    com.example.exam.entity.system.SysUser user = getUserByUsername(username);
-                    if (user != null) {
-                        return user.getUserId();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前用户ID失败", e);
-        }
-
-        // 如果获取失败，返回默认值（系统管理员ID）
-        return 1L;
-    }
-
-    /**
-     * 获取当前登录用户的组织ID
-     */
-    private Long getCurrentUserOrgId() {
-        try {
-            org.springframework.security.core.Authentication authentication =
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-
-            if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                    String username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-                    com.example.exam.entity.system.SysUser user = getUserByUsername(username);
-                    if (user != null && user.getOrgId() != null) {
-                        return user.getOrgId();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前用户组织ID失败", e);
-        }
-
-        // 如果获取失败，返回默认组织ID
-        return 1L;
-    }
-
-    /**
-     * 获取当前登录用户的主科目ID
-     */
-    private Long getCurrentUserSubjectId() {
-        try {
-            org.springframework.security.core.Authentication authentication =
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-
-            if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                    String username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-                    com.example.exam.entity.system.SysUser user = getUserByUsername(username);
-                    if (user != null) {
-                        // TODO: 从用户-科目关联表中查询用户的主科目
-                        return null;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前用户科目ID失败", e);
-        }
-        return null;
-    }
-
-    /**
-     * 根据用户名查询用户信息
-     */
-    private com.example.exam.entity.system.SysUser getUserByUsername(String username) {
-        try {
-            return userService.getUserByUsername(username);
-        } catch (Exception e) {
-            log.error("查询用户失败: username={}", username, e);
-            return null;
-        }
     }
 }
 

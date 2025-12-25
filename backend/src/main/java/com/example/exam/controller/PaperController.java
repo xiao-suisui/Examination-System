@@ -8,6 +8,7 @@ import com.example.exam.common.enums.AuditStatus;
 import com.example.exam.common.enums.PaperType;
 import com.example.exam.common.result.Result;
 import com.example.exam.dto.PaperDTO;
+import com.example.exam.dto.PaperStatisticsDTO;
 import com.example.exam.entity.paper.Paper;
 import com.example.exam.entity.paper.PaperRule;
 import com.example.exam.service.PaperService;
@@ -81,9 +82,9 @@ public class PaperController {
     @OperationLog(module = "试卷管理", type = "查询", description = "查询试卷统计信息", recordParams = false)
     @RequirePermission(value = "paper:view", desc = "查看试卷")
     @GetMapping("/{id:[0-9]+}/statistics")
-    public Result<com.example.exam.dto.PaperStatisticsDTO> statistics(
+    public Result<PaperStatisticsDTO> statistics(
             @Parameter(description = "试卷ID", required = true) @PathVariable Long id) {
-        com.example.exam.dto.PaperStatisticsDTO statistics = paperService.getPaperStatistics(id);
+        PaperStatisticsDTO statistics = paperService.getPaperStatistics(id);
         if (statistics == null) {
             return Result.error("试卷不存在");
         }

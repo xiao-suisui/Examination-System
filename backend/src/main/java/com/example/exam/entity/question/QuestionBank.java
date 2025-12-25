@@ -5,6 +5,7 @@ import com.example.exam.common.enums.BankType;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 @TableName("question_bank")
 public class QuestionBank implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -72,15 +74,15 @@ public class QuestionBank implements Serializable {
     private Integer questionCount;
 
     /**
-     * 创建者ID（私有题库必填）
+     * 创建者ID（私有题库必填，自动填充）
      */
-    @TableField("create_user_id")
+    @TableField(value = "create_user_id", fill = FieldFill.INSERT)
     private Long createUserId;
 
     /**
-     * 组织ID（数据隔离）
+     * 组织ID（数据隔离，自动填充）
      */
-    @TableField("org_id")
+    @TableField(value = "org_id", fill = FieldFill.INSERT)
     private Long orgId;
 
     /**

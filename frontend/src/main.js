@@ -55,6 +55,22 @@ if (import.meta.env.DEV) {
   }
 }
 
+// ========== 初始化认证状态 ==========
+// 在挂载应用前初始化认证状态
+import { useAuthStore } from '@/stores/modules/auth'
+const authStore = useAuthStore()
+
+// 如果有Token但没有用户信息，则从后端获取最新用户信息
+if (authStore.token && !authStore.userInfo) {
+  console.log('[App] 检测到Token但用户信息为空，正在初始化...')
+  authStore.initAuth().catch(error => {
+    console.error('[App] 初始化认证失败:', error)
+  })
+} else if (authStore.token && authStore.userInfo) {
+  console.log('[App] 用户已登录:', authStore.userInfo.username)
+}
+// ====================================
+
 // 挂载应用
 app.mount('#app')
 

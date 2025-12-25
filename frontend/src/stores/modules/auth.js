@@ -222,7 +222,7 @@ export const useAuthStore = defineStore('auth', () => {
 }, {
   persist: {
     key: 'exam-auth',
-    paths: ['token', 'isAuthenticated']
+    paths: ['token', 'isAuthenticated', 'userInfo', 'userPermissions']  // 添加userInfo和userPermissions
   }
 })
 

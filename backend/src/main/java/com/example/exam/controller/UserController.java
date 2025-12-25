@@ -1,17 +1,22 @@
 package com.example.exam.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.exam.annotation.OperationLog;
 import com.example.exam.annotation.RequirePermission;
 import com.example.exam.common.enums.AuditStatus;
 import com.example.exam.common.enums.UserStatus;
 import com.example.exam.common.result.Result;
+import com.example.exam.dto.UserDTO;
 import com.example.exam.entity.system.SysUser;
 import com.example.exam.service.UserService;
+import com.example.exam.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,7 +30,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
-@lombok.extern.slf4j.Slf4j
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -34,17 +39,16 @@ public class UserController {
     @RequirePermission(value = "user:view", desc = "查看用户")
     @OperationLog(module = "用户管理", type = "查询", description = "分页查询用户", recordParams = false)
     @GetMapping("/page")
-    public Result<com.baomidou.mybatisplus.core.metadata.IPage<com.example.exam.dto.UserDTO>> page(
+    public Result<IPage<UserDTO>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
             @Parameter(description = "用户名") @RequestParam(required = false) String username,
             @Parameter(description = "真实姓名") @RequestParam(required = false) String realName,
             @Parameter(description = "状态：0-禁用，1-启用") @RequestParam(required = false) com.example.exam.common.enums.UserStatus status) {
 
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<com.example.exam.dto.UserDTO> page =
-            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
+        Page<UserDTO> page = new Page<>(current, size);
 
-        com.baomidou.mybatisplus.core.metadata.IPage<com.example.exam.dto.UserDTO> result =
+        IPage<UserDTO> result =
             userService.pageUserDTO(page, username, realName, status);
 
         return Result.success(result);
@@ -178,7 +182,7 @@ public class UserController {
     @PostMapping("/avatar")
     public Result<java.util.Map<String, String>> uploadAvatar(@Parameter(description = "头像文件", required = true) @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         // 获取当前登录用户ID
-        Long currentUserId = com.example.exam.util.SecurityUtils.getCurrentUserId();
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         if (currentUserId == null) {
             return Result.error("未登录");
         }

@@ -30,9 +30,16 @@ export function setupBeforeEach(router) {
 
     // 不需要认证的页面，直接放行
     if (to.meta.requiresAuth === false) {
-      // 如果已登录，访问登录页则跳转到首页
+      // 如果已登录，访问登录页则根据角色跳转到不同页面
       if (to.path === '/login' && isAuthenticated) {
-        next('/')
+        const roleCode = authStore.user?.roleCode
+
+        // 学生跳转到"我的考试"，其他角色跳转到首页
+        if (roleCode === 'STUDENT') {
+          next('/student/exam')
+        } else {
+          next('/')
+        }
         return
       }
       next()
@@ -49,6 +56,22 @@ export function setupBeforeEach(router) {
       })
       return
     }
+
+    // ========== 防御性检查：确保用户信息已加载 ==========
+    // 如果Token存在但用户信息为空（可能是刷新后状态丢失），尝试重新获取
+    if (authStore.token && !authStore.userInfo) {
+      try {
+        console.log('[Guards] 检测到Token但用户信息为空，正在获取用户信息...')
+        await authStore.getCurrentUser()
+      } catch (error) {
+        console.error('[Guards] 获取用户信息失败:', error)
+        ElMessage.error('获取用户信息失败，请重新登录')
+        authStore.logout()
+        next('/login')
+        return
+      }
+    }
+    // ==================================================
 
     // 确保权限已加载
     if (!permissionStore.loaded) {
@@ -74,6 +97,18 @@ export function setupBeforeEach(router) {
       next('/403')
       return
     }
+
+    // ========== 智能跳转：学生访问首页时跳转到"我的考试" ==========
+    if (to.path === '/' || to.path === '/home') {
+      const roleCode = authStore.user?.roleCode
+
+      // 学生自动跳转到"我的考试"页面
+      if (roleCode === 'STUDENT') {
+        next('/student/exam')
+        return
+      }
+    }
+    // ==================================================
 
     next()
   })

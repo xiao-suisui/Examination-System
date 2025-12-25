@@ -53,9 +53,9 @@ public class Question implements Serializable {
     private Long bankId;
 
     /**
-     * 组织ID（数据隔离）
+     * 组织ID（数据隔离，自动填充）
      */
-    @TableField("org_id")
+    @TableField(value = "org_id", fill = FieldFill.INSERT)
     private Long orgId;
 
     /**
@@ -155,9 +155,9 @@ public class Question implements Serializable {
     private LocalDateTime auditTime;
 
     /**
-     * 创建人ID
+     * 创建人ID（自动填充）
      */
-    @TableField("create_user_id")
+    @TableField(value = "create_user_id", fill = FieldFill.INSERT)
     private Long createUserId;
 
     /**
