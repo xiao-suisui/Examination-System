@@ -7,9 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,9 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String TOKEN_BLACKLIST_PREFIX = "token:blacklist:";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                   HttpServletResponse response,
-                                   FilterChain filterChain)
+    protected void doFilterInternal(@NotNull HttpServletRequest request,
+                                    @NotNull HttpServletResponse response,
+                                    @NotNull FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
@@ -75,6 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     com.example.exam.security.UserDetailsImpl userDetails = new com.example.exam.security.UserDetailsImpl();
                     userDetails.setUserId(userId);
                     userDetails.setUsername(username);
+
                     // 尝试从Token中获取roleId（如果有的话）
                     try {
                         Long roleId = jwtUtil.getRoleIdFromToken(token);
@@ -82,6 +84,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     } catch (Exception ignored) {
                         // Token中可能没有roleId，忽略
                     }
+
+                    // 尝试从Token中获取orgId（如果有的话）
+                    try {
+                        Long orgId = jwtUtil.getOrgIdFromToken(token);
+                        userDetails.setOrgId(orgId);
+                    } catch (Exception ignored) {
+                        // Token中可能没有orgId，忽略
+                    }
+
                     userDetails.setEnabled(true);
 
                     // 创建认证对象，使用UserDetailsImpl作为principal
@@ -130,7 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isTokenBlacklisted(String token) {
         try {
             String key = TOKEN_BLACKLIST_PREFIX + token;
-            return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+            return redisTemplate.hasKey(key);
         } catch (Exception e) {
             log.error("检查Token黑名单失败：{}", e.getMessage());
             return false;

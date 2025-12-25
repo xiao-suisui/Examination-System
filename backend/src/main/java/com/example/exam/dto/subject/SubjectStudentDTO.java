@@ -26,6 +26,9 @@ public class SubjectStudentDTO implements Serializable {
     @Schema(description = "学生ID")
     private Long studentId;
 
+    @Schema(description = "用户ID（与studentId相同，用于前端兼容）")
+    private Long userId;
+
     @Schema(description = "学号")
     private String username;
 

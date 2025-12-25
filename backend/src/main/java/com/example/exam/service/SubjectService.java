@@ -161,8 +161,9 @@ public interface SubjectService extends IService<Subject> {
      * 获取可选学生列表
      *
      * @param keyword 关键词
+     * @param orgId 组织ID
      * @return 学生列表
      */
-    List<SubjectStudentDTO> getAvailableStudents(String keyword);
+    List<SubjectStudentDTO> getAvailableStudents(String keyword, Long orgId);
 }
 

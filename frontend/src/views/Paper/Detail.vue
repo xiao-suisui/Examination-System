@@ -411,10 +411,8 @@ const handleRemoveQuestion = async (questionId) => {
 
     if (res.code === 200) {
       ElMessage.success('移除成功')
-      // 重新加载试卷详情
+      // 重新加载试卷详情（后端已自动更新总分和及格分）
       await loadPaperDetail()
-      // 自动更新总分和及格分
-      await updatePaperScores()
     } else {
       ElMessage.error(res.message || '移除失败')
     }

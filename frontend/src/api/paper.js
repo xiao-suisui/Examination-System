@@ -74,7 +74,7 @@ export default {
    */
   autoGenerate(data) {
     return request({
-      url: `/api/paper/auto-generate`,
+      url: `/paper/auto-generate`,
       method: 'post',
       data
     })

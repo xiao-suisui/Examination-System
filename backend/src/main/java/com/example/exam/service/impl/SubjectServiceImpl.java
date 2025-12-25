@@ -500,16 +500,31 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, Subject> impl
             dto.setUserId(teacher.getUserId());
             dto.setUsername(teacher.getUsername());
             dto.setRealName(teacher.getRealName());
+            dto.setOrgId(teacher.getOrgId());
+
+            // 查询组织信息
+            if (teacher.getOrgId() != null) {
+                SysOrganization org = sysOrganizationMapper.selectById(teacher.getOrgId());
+                if (org != null) {
+                    dto.setOrgName(org.getOrgName());
+                }
+            }
+
             return dto;
         }).collect(Collectors.toList());
     }
 
     @Override
-    public List<SubjectStudentDTO> getAvailableStudents(String keyword) {
+    public List<SubjectStudentDTO> getAvailableStudents(String keyword, Long orgId) {
         // 查询学生（角色为STUDENT）
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SysUser::getRoleId, 3); // 3表示学生角色
         wrapper.eq(SysUser::getStatus, 1); // 状态启用
+
+        // 按组织ID筛选
+        if (orgId != null) {
+            wrapper.eq(SysUser::getOrgId, orgId);
+        }
 
         // 添加关键词搜索
         if (StringUtils.hasText(keyword)) {
@@ -528,6 +543,7 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, Subject> impl
         return students.stream().map(student -> {
             SubjectStudentDTO dto = new SubjectStudentDTO();
             dto.setStudentId(student.getUserId());
+            dto.setUserId(student.getUserId());  // 设置userId（与studentId相同）
             dto.setUsername(student.getUsername());
             dto.setRealName(student.getRealName());
             dto.setOrgId(student.getOrgId());

@@ -203,6 +203,14 @@
           </el-col>
         </el-row>
 
+        <el-alert
+          title="提示：添加或移除题目后，总分和及格分会根据题目分数自动更新"
+          type="info"
+          show-icon
+          :closable="false"
+          style="margin-bottom: 15px"
+        />
+
         <el-form-item label="试卷说明">
           <el-input
             v-model="formData.description"
@@ -233,14 +241,14 @@
     <el-dialog
       v-model="autoGenerateVisible"
       title="智能组卷"
-      width="600px"
+      width="800px"
       :close-on-click-modal="false"
     >
       <el-form :model="autoGenerateForm" label-width="120px">
-        <el-form-item label="试卷名称">
+        <el-form-item label="试卷名称" required>
           <el-input v-model="autoGenerateForm.paperName" placeholder="请输入试卷名称" />
         </el-form-item>
-        <el-form-item label="题库">
+        <el-form-item label="题库" required>
           <el-select v-model="autoGenerateForm.bankId" placeholder="请选择题库" style="width: 100%">
             <el-option
               v-for="bank in questionBanks"
@@ -250,28 +258,237 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="单选题数量">
-          <el-input-number v-model="autoGenerateForm.singleChoiceCount" :min="0" :max="50" />
+
+        <el-divider content-position="left">题型配置</el-divider>
+
+        <!-- 单选题 -->
+        <el-form-item label="单选题">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.singleChoice.easy"
+                :min="0"
+                :max="50"
+                placeholder="简单"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">简单</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.singleChoice.medium"
+                :min="0"
+                :max="50"
+                placeholder="中等"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">中等</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.singleChoice.hard"
+                :min="0"
+                :max="50"
+                placeholder="困难"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">困难</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.singleChoice.score"
+                :min="1"
+                :max="10"
+                placeholder="每题分值"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">分值</div>
+            </el-col>
+          </el-row>
         </el-form-item>
-        <el-form-item label="多选题数量">
-          <el-input-number v-model="autoGenerateForm.multipleChoiceCount" :min="0" :max="50" />
+
+        <!-- 多选题 -->
+        <el-form-item label="多选题">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.multipleChoice.easy"
+                :min="0"
+                :max="50"
+                placeholder="简单"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">简单</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.multipleChoice.medium"
+                :min="0"
+                :max="50"
+                placeholder="中等"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">中等</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.multipleChoice.hard"
+                :min="0"
+                :max="50"
+                placeholder="困难"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">困难</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.multipleChoice.score"
+                :min="1"
+                :max="10"
+                placeholder="每题分值"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">分值</div>
+            </el-col>
+          </el-row>
         </el-form-item>
-        <el-form-item label="判断题数量">
-          <el-input-number v-model="autoGenerateForm.trueFalseCount" :min="0" :max="50" />
+
+        <!-- 判断题 -->
+        <el-form-item label="判断题">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.trueFalse.easy"
+                :min="0"
+                :max="50"
+                placeholder="简单"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">简单</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.trueFalse.medium"
+                :min="0"
+                :max="50"
+                placeholder="中等"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">中等</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.trueFalse.hard"
+                :min="0"
+                :max="50"
+                placeholder="困难"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">困难</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.trueFalse.score"
+                :min="1"
+                :max="10"
+                placeholder="每题分值"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">分值</div>
+            </el-col>
+          </el-row>
         </el-form-item>
-        <el-form-item label="填空题数量">
-          <el-input-number v-model="autoGenerateForm.fillBlankCount" :min="0" :max="20" />
+
+        <!-- 填空题 -->
+        <el-form-item label="填空题">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.fillBlank.easy"
+                :min="0"
+                :max="20"
+                placeholder="简单"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">简单</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.fillBlank.medium"
+                :min="0"
+                :max="20"
+                placeholder="中等"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">中等</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.fillBlank.hard"
+                :min="0"
+                :max="20"
+                placeholder="困难"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">困难</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.fillBlank.score"
+                :min="1"
+                :max="15"
+                placeholder="每题分值"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">分值</div>
+            </el-col>
+          </el-row>
         </el-form-item>
-        <el-form-item label="简答题数量">
-          <el-input-number v-model="autoGenerateForm.shortAnswerCount" :min="0" :max="10" />
-        </el-form-item>
-        <el-form-item label="难度分布">
-          <el-radio-group v-model="autoGenerateForm.difficultyMode">
-            <el-radio value="EASY">简单为主</el-radio>
-            <el-radio value="MEDIUM">中等为主</el-radio>
-            <el-radio value="HARD">困难为主</el-radio>
-            <el-radio value="MIXED">均衡分布</el-radio>
-          </el-radio-group>
+
+        <!-- 简答题 -->
+        <el-form-item label="简答题">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.shortAnswer.easy"
+                :min="0"
+                :max="10"
+                placeholder="简单"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">简单</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.shortAnswer.medium"
+                :min="0"
+                :max="10"
+                placeholder="中等"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">中等</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.shortAnswer.hard"
+                :min="0"
+                :max="10"
+                placeholder="困难"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">困难</div>
+            </el-col>
+            <el-col :span="6">
+              <el-input-number
+                v-model="autoGenerateForm.shortAnswer.score"
+                :min="1"
+                :max="20"
+                placeholder="每题分值"
+                style="width: 100%"
+              />
+              <div style="text-align: center; font-size: 12px; color: #909399; margin-top: 4px;">分值</div>
+            </el-col>
+          </el-row>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -376,12 +593,36 @@ const autoGenerateVisible = ref(false)
 const autoGenerateForm = reactive({
   paperName: '',
   bankId: null,
-  singleChoiceCount: 10,
-  multipleChoiceCount: 5,
-  trueFalseCount: 5,
-  fillBlankCount: 3,
-  shortAnswerCount: 2,
-  difficultyMode: 'MIXED'
+  singleChoice: {
+    easy: 5,
+    medium: 3,
+    hard: 2,
+    score: 2
+  },
+  multipleChoice: {
+    easy: 2,
+    medium: 2,
+    hard: 1,
+    score: 3
+  },
+  trueFalse: {
+    easy: 3,
+    medium: 2,
+    hard: 0,
+    score: 2
+  },
+  fillBlank: {
+    easy: 1,
+    medium: 1,
+    hard: 1,
+    score: 5
+  },
+  shortAnswer: {
+    easy: 0,
+    medium: 1,
+    hard: 1,
+    score: 10
+  }
 })
 
 // 表单数据
@@ -454,6 +695,8 @@ const handleEdit = async (row) => {
       paperType: row.paperType,
       subjectId: row.subjectId,
       bankId: row.bankId,
+      passScore: row.passScore,
+      totalScore: row.totalScore,
       description: row.description
     })
     // 加载该科目的题库
@@ -485,6 +728,8 @@ const handleDeletePaper = (row) => {
 
 // 智能组卷
 const handleAutoGenerate = () => {
+  // 加载题库列表
+  loadQuestionBanks()
   autoGenerateVisible.value = true
 }
 
@@ -503,67 +748,72 @@ const submitAutoGenerate = async () => {
   const rules = []
 
   // 单选题规则
-  if (autoGenerateForm.singleChoiceCount > 0) {
+  const singleTotal = autoGenerateForm.singleChoice.easy + autoGenerateForm.singleChoice.medium + autoGenerateForm.singleChoice.hard
+  if (singleTotal > 0) {
     rules.push({
       bankId: autoGenerateForm.bankId,
       questionType: 1, // 单选题
-      totalNum: autoGenerateForm.singleChoiceCount,
-      singleScore: 2,
-      easyNum: 0,
-      mediumNum: 0,
-      hardNum: 0
+      totalNum: singleTotal,
+      singleScore: autoGenerateForm.singleChoice.score,
+      easyNum: autoGenerateForm.singleChoice.easy,
+      mediumNum: autoGenerateForm.singleChoice.medium,
+      hardNum: autoGenerateForm.singleChoice.hard
     })
   }
 
   // 多选题规则
-  if (autoGenerateForm.multipleChoiceCount > 0) {
+  const multipleTotal = autoGenerateForm.multipleChoice.easy + autoGenerateForm.multipleChoice.medium + autoGenerateForm.multipleChoice.hard
+  if (multipleTotal > 0) {
     rules.push({
       bankId: autoGenerateForm.bankId,
       questionType: 2, // 多选题
-      totalNum: autoGenerateForm.multipleChoiceCount,
-      singleScore: 3,
-      easyNum: 0,
-      mediumNum: 0,
-      hardNum: 0
+      totalNum: multipleTotal,
+      singleScore: autoGenerateForm.multipleChoice.score,
+      easyNum: autoGenerateForm.multipleChoice.easy,
+      mediumNum: autoGenerateForm.multipleChoice.medium,
+      hardNum: autoGenerateForm.multipleChoice.hard
     })
   }
 
   // 判断题规则
-  if (autoGenerateForm.trueFalseCount > 0) {
+  const trueFalseTotal = autoGenerateForm.trueFalse.easy + autoGenerateForm.trueFalse.medium + autoGenerateForm.trueFalse.hard
+  if (trueFalseTotal > 0) {
     rules.push({
       bankId: autoGenerateForm.bankId,
       questionType: 3, // 判断题
-      totalNum: autoGenerateForm.trueFalseCount,
-      singleScore: 2,
-      easyNum: 0,
-      mediumNum: 0,
-      hardNum: 0
+      totalNum: trueFalseTotal,
+      singleScore: autoGenerateForm.trueFalse.score,
+      easyNum: autoGenerateForm.trueFalse.easy,
+      mediumNum: autoGenerateForm.trueFalse.medium,
+      hardNum: autoGenerateForm.trueFalse.hard
     })
   }
 
   // 填空题规则
-  if (autoGenerateForm.fillBlankCount > 0) {
+  const fillBlankTotal = autoGenerateForm.fillBlank.easy + autoGenerateForm.fillBlank.medium + autoGenerateForm.fillBlank.hard
+  if (fillBlankTotal > 0) {
     rules.push({
       bankId: autoGenerateForm.bankId,
       questionType: 4, // 填空题
-      totalNum: autoGenerateForm.fillBlankCount,
-      singleScore: 5,
-      easyNum: 0,
-      mediumNum: 0,
-      hardNum: 0
+      totalNum: fillBlankTotal,
+      singleScore: autoGenerateForm.fillBlank.score,
+      easyNum: autoGenerateForm.fillBlank.easy,
+      mediumNum: autoGenerateForm.fillBlank.medium,
+      hardNum: autoGenerateForm.fillBlank.hard
     })
   }
 
   // 主观题规则
-  if (autoGenerateForm.shortAnswerCount > 0) {
+  const shortAnswerTotal = autoGenerateForm.shortAnswer.easy + autoGenerateForm.shortAnswer.medium + autoGenerateForm.shortAnswer.hard
+  if (shortAnswerTotal > 0) {
     rules.push({
       bankId: autoGenerateForm.bankId,
       questionType: 5, // 主观题
-      totalNum: autoGenerateForm.shortAnswerCount,
-      singleScore: 10,
-      easyNum: 0,
-      mediumNum: 0,
-      hardNum: 0
+      totalNum: shortAnswerTotal,
+      singleScore: autoGenerateForm.shortAnswer.score,
+      easyNum: autoGenerateForm.shortAnswer.easy,
+      mediumNum: autoGenerateForm.shortAnswer.medium,
+      hardNum: autoGenerateForm.shortAnswer.hard
     })
   }
 
@@ -578,8 +828,8 @@ const submitAutoGenerate = async () => {
       paperName: autoGenerateForm.paperName,
       paperType: 2, // 自动组卷
       description: '通过智能组卷生成的试卷',
-      passScore: 60,
       auditStatus: 0 // 草稿
+      // 注意：totalScore 和 passScore 由后端根据题目自动计算
     },
     rules: rules
   }
@@ -589,16 +839,15 @@ const submitAutoGenerate = async () => {
     if (res.code === 200) {
       ElMessage.success('组卷成功')
       autoGenerateVisible.value = false
-      loadPapers()
+      loadData() // 刷新列表
       // 重置表单
       autoGenerateForm.paperName = ''
       autoGenerateForm.bankId = null
-      autoGenerateForm.singleChoiceCount = 10
-      autoGenerateForm.multipleChoiceCount = 5
-      autoGenerateForm.trueFalseCount = 5
-      autoGenerateForm.fillBlankCount = 3
-      autoGenerateForm.shortAnswerCount = 2
-      autoGenerateForm.difficultyMode = 'MIXED'
+      autoGenerateForm.singleChoice = { easy: 5, medium: 3, hard: 2, score: 2 }
+      autoGenerateForm.multipleChoice = { easy: 2, medium: 2, hard: 1, score: 3 }
+      autoGenerateForm.trueFalse = { easy: 3, medium: 2, hard: 0, score: 2 }
+      autoGenerateForm.fillBlank = { easy: 1, medium: 1, hard: 1, score: 5 }
+      autoGenerateForm.shortAnswer = { easy: 0, medium: 1, hard: 1, score: 10 }
     } else {
       ElMessage.error(res.message || '组卷失败')
     }
@@ -625,7 +874,7 @@ const handleSubmit = async () => {
       if (res.code === 200) {
         ElMessage.success(formData.paperId ? '更新成功' : '创建成功')
         dialogVisible.value = false
-        loadPapers()
+        loadData() // 刷新列表
       }
     } catch (error) {
       ElMessage.error(formData.paperId ? '更新失败' : '创建失败')
@@ -645,9 +894,13 @@ const resetForm = () => {
   formData.passScore = 60
   formData.totalScore = 100
   formData.description = ''
-  formData.questions = []
-  selectedQuestions.value = []
-  formRef.value.resetFields()
+
+  // 重置表单验证
+  nextTick(() => {
+    if (formRef.value) {
+      formRef.value.clearValidate()
+    }
+  })
 }
 
 

@@ -144,11 +144,11 @@ export default {
   /**
    * 获取可选学生列表
    */
-  getAvailableStudents(keyword) {
+  getAvailableStudents(keyword, orgId) {
     return request({
       url: '/subject/available-students',
       method: 'get',
-      params: { keyword }
+      params: { keyword, orgId }
     })
   }
 }

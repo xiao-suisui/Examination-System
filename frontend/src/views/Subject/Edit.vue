@@ -153,7 +153,7 @@ const rules = {
 // 加载学院列表
 const loadAcademyList = async () => {
   try {
-    const res = await organizationApi.tree()
+    const res = await organizationApi.getTree()
     if (res.code === 200) {
       // 筛选出学院（org_level=2）
       academyList.value = filterAcademies(res.data)

@@ -10,7 +10,7 @@
     </el-button>
 
     <el-table :data="managerList" border>
-      <el-table-column prop="userName" label="姓名" />
+      <el-table-column prop="realName" label="姓名" />
       <el-table-column prop="managerType" label="类型" width="120">
         <template #default="{ row }">
           <el-tag v-if="row.managerType === 1">主讲教师</el-tag>
@@ -36,16 +36,37 @@
     <el-dialog
       v-model="addDialogVisible"
       title="添加管理员"
-      width="500px"
+      width="600px"
       append-to-body
     >
       <el-form :model="addForm" label-width="100px">
-        <el-form-item label="选择用户">
-          <el-select v-model="addForm.userId" filterable placeholder="请选择">
+        <el-form-item label="筛选组织">
+          <el-select
+            v-model="filterOrgId"
+            filterable
+            placeholder="请选择组织筛选"
+            @change="handleOrgChange"
+            clearable
+          >
             <el-option
-              v-for="user in userList"
+              v-for="org in orgList"
+              :key="org.orgId"
+              :label="org.orgName"
+              :value="org.orgId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="选择用户">
+          <el-select
+            v-model="addForm.userId"
+            filterable
+            placeholder="请选择教师"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in filteredUserList"
               :key="user.userId"
-              :label="`${user.realName}（${user.username}）`"
+              :label="`${user.realName || user.username}（${user.username}）${user.orgName ? ' - ' + user.orgName : ''}`"
               :value="user.userId"
             />
           </el-select>
@@ -77,10 +98,11 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import subjectApi from '@/api/subject'
+import organizationApi from '@/api/organization'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -93,6 +115,8 @@ const visible = ref(false)
 const addDialogVisible = ref(false)
 const managerList = ref([])
 const userList = ref([])
+const orgList = ref([])
+const filterOrgId = ref(null)
 
 const addForm = ref({
   userId: null,
@@ -100,17 +124,53 @@ const addForm = ref({
   permissions: []
 })
 
+// 根据组织筛选用户列表
+const filteredUserList = computed(() => {
+  if (!filterOrgId.value) {
+    return userList.value
+  }
+  return userList.value.filter(user => user.orgId === filterOrgId.value)
+})
+
 watch(() => props.modelValue, (val) => {
   visible.value = val
   if (val && props.subject) {
     loadManagers()
     loadAvailableTeachers()
+    loadOrgList()
   }
 })
 
 watch(visible, (val) => {
   emit('update:modelValue', val)
 })
+
+// 加载组织列表
+const loadOrgList = async () => {
+  try {
+    const res = await organizationApi.getTree()
+    if (res.code === 200) {
+      orgList.value = flattenOrgTree(res.data)
+    }
+  } catch (error) {
+    console.error('加载组织列表失败:', error)
+  }
+}
+
+// 扁平化组织树
+const flattenOrgTree = (nodes, result = []) => {
+  nodes.forEach(node => {
+    result.push({
+      orgId: node.orgId,
+      orgName: node.orgName,
+      orgLevel: node.orgLevel
+    })
+    if (node.children && node.children.length > 0) {
+      flattenOrgTree(node.children, result)
+    }
+  })
+  return result
+}
 
 // 加载管理员列表
 const loadManagers = async () => {
@@ -136,8 +196,30 @@ const loadAvailableTeachers = async () => {
   }
 }
 
+// 组织筛选变化
+const handleOrgChange = async () => {
+  addForm.value.userId = null
+
+  // 如果选择了组织，重新加载该组织的教师
+  if (filterOrgId.value) {
+    try {
+      const res = await subjectApi.getAvailableTeachers(filterOrgId.value)
+      if (res.code === 200) {
+        userList.value = res.data || []
+      }
+    } catch (error) {
+      console.error('加载教师列表失败:', error)
+      ElMessage.error('加载教师列表失败')
+    }
+  } else {
+    // 如果清空组织筛选，重新加载科目默认的教师列表
+    await loadAvailableTeachers()
+  }
+}
+
 const handleAdd = () => {
   addDialogVisible.value = true
+  filterOrgId.value = null
   addForm.value = {
     userId: null,
     managerType: 2,
@@ -146,15 +228,21 @@ const handleAdd = () => {
 }
 
 const handleConfirmAdd = async () => {
+  if (!addForm.value.userId) {
+    ElMessage.warning('请选择用户')
+    return
+  }
+
   try {
     const res = await subjectApi.addManager(props.subject.subjectId, addForm.value)
     if (res.code === 200) {
       ElMessage.success('添加成功')
       addDialogVisible.value = false
+      loadManagers()
       emit('refresh')
     }
   } catch (error) {
-    ElMessage.error('添加失败')
+    ElMessage.error(error.message || '添加失败')
   }
 }
 
@@ -163,10 +251,11 @@ const handleRemove = async (row) => {
     const res = await subjectApi.removeManager(props.subject.subjectId, row.userId)
     if (res.code === 200) {
       ElMessage.success('移除成功')
+      loadManagers()
       emit('refresh')
     }
   } catch (error) {
-    ElMessage.error('移除失败')
+    ElMessage.error(error.message || '移除失败')
   }
 }
 

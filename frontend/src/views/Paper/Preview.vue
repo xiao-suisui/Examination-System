@@ -75,7 +75,7 @@
           >
             <div class="question-header">
               <span class="question-number">{{ index + 1 }}.</span>
-              <span class="question-score">（{{ question.score || question.defaultScore }}分）</span>
+              <span class="question-score">（{{ question.defaultScore }}分）</span>
             </div>
             <div class="question-content" v-html="formatContent(question.questionContent)"></div>
             <div class="question-options" v-if="question.options && question.options.length">
@@ -122,7 +122,7 @@
           >
             <div class="question-header">
               <span class="question-number">{{ index + 1 }}.</span>
-              <span class="question-score">（{{ question.score || question.defaultScore }}分）</span>
+              <span class="question-score">（{{ question.defaultScore }}分）</span>
             </div>
             <div class="question-content" v-html="formatContent(question.questionContent)"></div>
             <div class="question-options" v-if="question.options && question.options.length">
@@ -169,7 +169,7 @@
           >
             <div class="question-header">
               <span class="question-number">{{ index + 1 }}.</span>
-              <span class="question-score">（{{ question.score || question.defaultScore }}分）</span>
+              <span class="question-score">（{{ question.defaultScore }}分）</span>
             </div>
             <div class="question-content" v-html="formatContent(question.questionContent)"></div>
             <div class="question-options" v-if="question.options && question.options.length">
@@ -216,7 +216,7 @@
           >
             <div class="question-header">
               <span class="question-number">{{ index + 1 }}.</span>
-              <span class="question-score">（{{ question.score || question.defaultScore }}分）</span>
+              <span class="question-score">（{{ question.defaultScore }}分）</span>
             </div>
             <div class="question-content" v-html="formatContent(question.questionContent)"></div>
             <div class="answer-input-line"></div>
@@ -250,7 +250,7 @@
           >
             <div class="question-header">
               <span class="question-number">{{ index + 1 }}.</span>
-              <span class="question-score">（{{ question.score || question.defaultScore }}分）</span>
+              <span class="question-score">（{{ question.defaultScore }}分）</span>
             </div>
             <div class="question-content" v-html="formatContent(question.questionContent)"></div>
             <div class="answer-area"></div>
@@ -307,14 +307,14 @@ const questionsByType = computed(() => {
 // 计算题型的平均分数
 const calculateAvgScore = (questions) => {
   if (!questions || questions.length === 0) return 0
-  const total = questions.reduce((sum, q) => sum + (q.score || q.defaultScore || 0), 0)
+  const total = questions.reduce((sum, q) => sum + (q.defaultScore || 0), 0)
   return (total / questions.length).toFixed(1)
 }
 
 // 计算题型的总分
 const calculateTotalScore = (questions) => {
   if (!questions || questions.length === 0) return 0
-  return questions.reduce((sum, q) => sum + (q.score || q.defaultScore || 0), 0).toFixed(1)
+  return questions.reduce((sum, q) => sum + (q.defaultScore || 0), 0).toFixed(1)
 }
 
 // 格式化内容（处理换行等）

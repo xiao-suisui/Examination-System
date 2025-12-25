@@ -172,9 +172,10 @@ public class SubjectController {
     @OperationLog(module = "科目管理", type = "查询", description = "查询可选学生", recordParams = false)
     @GetMapping("/available-students")
     public Result<List<SubjectStudentDTO>> getAvailableStudents(
-            @Parameter(description = "关键词") @RequestParam(required = false) String keyword
+            @Parameter(description = "关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "组织ID") @RequestParam(required = false) Long orgId
     ) {
-        return Result.success(subjectService.getAvailableStudents(keyword));
+        return Result.success(subjectService.getAvailableStudents(keyword, orgId));
     }
 }
 

@@ -52,6 +52,28 @@ public class JwtUtil {
     }
 
     /**
+     * 生成JWT Token（包含角色ID和组织ID）
+     *
+     * @param username 用户名
+     * @param userId   用户ID
+     * @param roleId   角色ID
+     * @param orgId    组织ID
+     * @return JWT Token
+     */
+    public String generateToken(String username, Long userId, Long roleId, Long orgId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("username", username);
+        if (roleId != null) {
+            claims.put("roleId", roleId);
+        }
+        if (orgId != null) {
+            claims.put("orgId", orgId);
+        }
+        return createToken(claims, username, expiration);
+    }
+
+    /**
      * 生成JWT Token（包含角色ID）
      *
      * @param username 用户名
@@ -60,13 +82,7 @@ public class JwtUtil {
      * @return JWT Token
      */
     public String generateToken(String username, Long userId, Long roleId) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);
-        claims.put("username", username);
-        if (roleId != null) {
-            claims.put("roleId", roleId);
-        }
-        return createToken(claims, username, expiration);
+        return generateToken(username, userId, roleId, null);
     }
 
     /**
@@ -135,6 +151,17 @@ public class JwtUtil {
     public Long getRoleIdFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims.get("roleId", Long.class);
+    }
+
+    /**
+     * 从Token中获取组织ID
+     *
+     * @param token JWT Token
+     * @return 组织ID
+     */
+    public Long getOrgIdFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("orgId", Long.class);
     }
 
     /**

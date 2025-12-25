@@ -208,7 +208,7 @@ const handleDetail = (row) => {
   })
 }
 
-// 编辑
+// 编辑（只修改科目基本信息）
 const handleEdit = (row) => {
   router.push({
     path: '/subject/edit',

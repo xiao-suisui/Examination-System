@@ -167,7 +167,7 @@ public class Exam implements Serializable {
     /**
      * 组织ID
      */
-    @TableField("org_id")
+    @TableField(value = "org_id", fill = FieldFill.INSERT)
     private Long orgId;
 
     /**

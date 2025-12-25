@@ -36,6 +36,12 @@ public class SubjectManagerDTO implements Serializable {
     @Schema(description = "真实姓名")
     private String realName;
 
+    @Schema(description = "组织ID")
+    private Long orgId;
+
+    @Schema(description = "组织名称")
+    private String orgName;
+
     @Schema(description = "是否为创建者：0-否，1-是")
     private Integer isCreator;
 

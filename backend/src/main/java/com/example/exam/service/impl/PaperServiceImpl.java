@@ -183,6 +183,8 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         try {
             // 1. 保存试卷基本信息
             paper.setPaperType(PaperType.AUTO); // 自动组卷
+            // createUserId 和 orgId 会通过 MyBatis-Plus 自动填充
+
             if (!this.save(paper)) {
                 log.error("保存试卷失败");
                 return null;
@@ -227,11 +229,16 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
                 }
             }
 
-            // 3. 更新试卷的总分
+            // 3. 更新试卷的总分和及格分
             paper.setTotalScore(totalScore);
+            // 计算及格分（总分的60%，四舍五入到整数）
+            BigDecimal passScore = totalScore.multiply(new BigDecimal("0.6"))
+                    .setScale(0, java.math.RoundingMode.HALF_UP);
+            paper.setPassScore(passScore);
             this.updateById(paper);
 
-            log.info("自动组卷成功，试卷ID: {}, 题目数: {}, 总分: {}", paperId, questionOrder - 1, totalScore);
+            log.info("自动组卷成功，试卷ID: {}, 题目数: {}, 总分: {}, 及格分: {}",
+                    paperId, questionOrder - 1, totalScore, passScore);
             return paperId;
 
         } catch (Exception e) {
@@ -275,8 +282,12 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
                 }
             }
 
-            // 更新试卷总分
+            // 更新试卷总分和及格分
             paper.setTotalScore(totalScore);
+            // 计算及格分（总分的60%，四舍五入到整数）
+            BigDecimal passScore = totalScore.multiply(new BigDecimal("0.6"))
+                    .setScale(0, java.math.RoundingMode.HALF_UP);
+            paper.setPassScore(passScore);
             this.updateById(paper);
 
             log.info("添加题目到试卷成功，试卷ID: {}, 新增题目数: {}", paperId, questionIds.length);
@@ -313,8 +324,13 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
             // 删除题目
             paperQuestionMapper.delete(wrapper);
 
-            // 更新试卷总分
-            paper.setTotalScore(paper.getTotalScore().subtract(removedScore));
+            // 更新试卷总分和及格分
+            BigDecimal newTotalScore = paper.getTotalScore().subtract(removedScore);
+            paper.setTotalScore(newTotalScore);
+            // 计算及格分（总分的60%，四舍五入到整数）
+            BigDecimal passScore = newTotalScore.multiply(new BigDecimal("0.6"))
+                    .setScale(0, java.math.RoundingMode.HALF_UP);
+            paper.setPassScore(passScore);
             this.updateById(paper);
 
             log.info("从试卷移除题目成功，试卷ID: {}, 移除题目数: {}", paperId, questionIds.length);
@@ -353,8 +369,9 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
             newPaper.setPaperType(originalPaper.getPaperType());
             newPaper.setPassScore(originalPaper.getPassScore());
             newPaper.setTotalScore(originalPaper.getTotalScore());
-            newPaper.setCreateUserId(originalPaper.getCreateUserId());
-            newPaper.setOrgId(originalPaper.getOrgId());
+            newPaper.setSubjectId(originalPaper.getSubjectId());
+            newPaper.setBankId(originalPaper.getBankId());
+            // createUserId 和 orgId 会通过 MyBatis-Plus 自动填充
             newPaper.setAuditStatus(AuditStatus.DRAFT); // 新试卷默认为草稿状态
             newPaper.setPublishStatus(0); // 默认未发布
 

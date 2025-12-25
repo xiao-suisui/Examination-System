@@ -84,13 +84,13 @@ public class Paper implements Serializable {
     /**
      * 组织ID（数据隔离）
      */
-    @TableField("org_id")
+    @TableField(value = "org_id", fill = FieldFill.INSERT)
     private Long orgId;
 
     /**
      * 创建人ID
      */
-    @TableField("create_user_id")
+    @TableField(value = "create_user_id", fill = FieldFill.INSERT)
     private Long createUserId;
 
     /**

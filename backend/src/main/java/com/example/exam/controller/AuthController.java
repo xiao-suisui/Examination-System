@@ -60,8 +60,8 @@ public class AuthController {
             return Result.error("账号已被禁用");
         }
 
-        // 生成Token（包含roleId信息）
-        String token = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRoleId());
+        // 生成Token（包含roleId和orgId信息）
+        String token = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRoleId(), user.getOrgId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId());
 
         // 更新最后登录时间和IP
