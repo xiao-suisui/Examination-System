@@ -54,11 +54,11 @@ public class AuthController {
             return Result.error("账号已被禁用");
         }
 
-        // 生成Token
+        // 生成新Token
         String token = jwtUtil.generateToken(user.getUsername(), user.getUserId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId());
 
-        // 更新最后登录时间和IP
+        // 更新最后登录时间以及IP
         String ip = getClientIp(request);
         userService.updateLastLogin(user.getUserId(), ip);
 
@@ -78,18 +78,18 @@ public class AuthController {
     @com.example.exam.annotation.OperationLog(module = "认证模块", type = "登出", description = "用户登出", recordParams = false)
     @PostMapping("/logout")
     public Result<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        // 提取Token并加入黑名单
+        // 提取到Token并加入黑名单
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
             try {
-                // 获取Token过期时间
+                // 获取Token的过期时间
                 long expirationTime = jwtUtil.getExpirationDateFromToken(token).getTime() - System.currentTimeMillis();
                 if (expirationTime > 0) {
-                    // 将Token加入黑名单
+                    // 将无用Token加入黑名单
                     jwtAuthenticationFilter.addTokenToBlacklist(token, expirationTime);
                 }
             } catch (Exception e) {
-                // Token无效或已过期，忽略
+                // Token无效或着已过期，忽略
                 log.warn("登出时Token解析失败：{}", e.getMessage());
             }
         }
@@ -102,16 +102,16 @@ public class AuthController {
             @Parameter(description = "刷新Token", required = true) @RequestParam String refreshToken) {
 
         try {
-            // 从刷新Token中获取用户名
+            // 从刷新的Token中获取用户名
             String username = jwtUtil.getUsernameFromToken(refreshToken);
             Long userId = jwtUtil.getUserIdFromToken(refreshToken);
 
-            // 验证刷新Token
+            // 验证刷新的Token
             if (!jwtUtil.validateToken(refreshToken, username)) {
                 return Result.error("刷新Token无效或已过期");
             }
 
-            // 生成新的访问Token
+            // 生成新访问Token
             String newToken = jwtUtil.generateToken(username, userId);
 
             Map<String, String> result = new HashMap<>();
@@ -123,40 +123,50 @@ public class AuthController {
         }
     }
 
+    /**
+     * 根据Token获取当前登录用户的信息
+     * 核心逻辑：校验Token有效性 → 解析用户名 → 查询用户信息 → 封装非敏感信息返回
+     * @param authorization 请求头中的Authorization字段（格式：Bearer + Token）
+     * @return Result<Map<String, Object>> 响应结果：
+     *         - 成功：返回封装用户非敏感信息的Map（不含密码）
+     *         - 失败：返回对应错误提示（Token无效/过期/用户不存在/系统异常等）
+     */
     @Operation(summary = "获取当前用户信息", description = "根据Token获取当前登录用户的信息")
     @GetMapping("/current-user")
     public Result<Map<String, Object>> getCurrentUser(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
 
+        // 1. 校验Token是否存在且格式正确（必须以Bearer 开头）
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return Result.error("未登录或Token无效");
         }
 
         try {
-            String token = authorization.substring(7);
-            String username = jwtUtil.getUsernameFromToken(token);
+            String token = authorization.substring(7);  // 截取Bearer前缀后的纯Token字符串（前缀长度为7："Bearer "含空格）
+            String username = jwtUtil.getUsernameFromToken(token);  // 从Token中解析出用户名（核心身份标识）
 
-            // 验证Token
-            if (!jwtUtil.validateToken(token, username)) {
+            // 验证Token是否过期
+            if (!jwtUtil.validateToken(token, username)) {  // 2. 校验Token有效性
                 return Result.error("Token已过期");
             }
 
             // 获取用户信息
-            SysUser user = userService.getUserByUsername(username);
+            SysUser user = userService.getUserByUsername(username); // 3. 根据解析的用户名查询用户完整信息
             if (user == null) {
                 return Result.error("用户不存在");
             }
 
+            // 4. 封装用户非敏感信息返回
             Map<String, Object> result = new HashMap<>();
-            result.put("userId", user.getUserId());
-            result.put("username", user.getUsername());
-            result.put("realName", user.getRealName());
-            result.put("email", user.getEmail());
-            result.put("phone", user.getPhone());
-            result.put("roleId", user.getRoleId());
-            result.put("avatar", user.getAvatar());
-            result.put("orgId", user.getOrgId());
-            result.put("status", user.getStatus());
+            result.put("userId", user.getUserId());       // 用户ID（主键）
+            result.put("username", user.getUsername());   // 登录用户名
+            result.put("realName", user.getRealName());   // 真实姓名
+            result.put("email", user.getEmail());         // 邮箱
+            result.put("phone", user.getPhone());         // 手机号
+            result.put("roleId", user.getRoleId());       // 角色ID（关联权限）
+            result.put("avatar", user.getAvatar());       // 头像地址
+            result.put("orgId", user.getOrgId());         // 所属组织ID
+            result.put("status", user.getStatus());       // 用户状态（启用/禁用）
             // 不返回密码等敏感信息
 
             return Result.success("获取成功", result);
