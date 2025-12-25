@@ -25,13 +25,13 @@ public interface ExamService extends IService<Exam> {
     /**
      * 分页查询考试
      */
-    IPage<Exam> pageExams(Page<Exam> page, ExamStatus status, String keyword,
+    IPage<Exam> pageExams(Page<Exam> page, Long subjectId, ExamStatus status, String keyword,
                           LocalDateTime startTimeBegin, LocalDateTime startTimeEnd);
 
     /**
      * 分页查询考试DTO（包含试卷名称、组织名称等）
      */
-    IPage<ExamDTO> pageExamDTO(Page<?> page, ExamStatus status, String keyword,
+    IPage<ExamDTO> pageExamDTO(Page<?> page, Long subjectId, ExamStatus status, String keyword,
                                LocalDateTime startTimeBegin, LocalDateTime startTimeEnd);
 
     /**

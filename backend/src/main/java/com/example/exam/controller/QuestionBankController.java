@@ -78,8 +78,12 @@ public class QuestionBankController {
     public Result<Long> create(
             @Parameter(description = "题库信息", required = true) @RequestBody QuestionBank questionBank) {
 
+        // 校验科目ID
+        if (questionBank.getSubjectId() == null) {
+            return Result.error("所属科目不能为空");
+        }
+
         // 注意：createUserId 和 orgId 已由 MyBatis-Plus 自动填充，无需手动设置
-        // 注意：subjectId 应由前端传入或在业务逻辑中设置
 
         // 设置默认状态
         if (questionBank.getStatus() == null) {

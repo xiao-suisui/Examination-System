@@ -48,10 +48,11 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
     private final com.example.exam.mapper.system.SysUserMapper userMapper;
 
     @Override
-    public IPage<Exam> pageExams(Page<Exam> page, ExamStatus status, String keyword,
+    public IPage<Exam> pageExams(Page<Exam> page, Long subjectId, ExamStatus status, String keyword,
                                  LocalDateTime startTimeBegin, LocalDateTime startTimeEnd) {
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(status != null, Exam::getExamStatus, status)
+        wrapper.eq(subjectId != null, Exam::getSubjectId, subjectId)
+               .eq(status != null, Exam::getExamStatus, status)
                .like(keyword != null && !keyword.isEmpty(), Exam::getExamName, keyword)
                .ge(startTimeBegin != null, Exam::getStartTime, startTimeBegin)
                .le(startTimeEnd != null, Exam::getStartTime, startTimeEnd)
@@ -60,11 +61,11 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
     }
 
     @Override
-    public IPage<ExamDTO> pageExamDTO(Page<?> page, ExamStatus status, String keyword,
+    public IPage<ExamDTO> pageExamDTO(Page<?> page, Long subjectId, ExamStatus status, String keyword,
                                       LocalDateTime startTimeBegin, LocalDateTime startTimeEnd) {
         // 先查询基础数据
         Page<Exam> examPage = new Page<>(page.getCurrent(), page.getSize());
-        IPage<Exam> examResult = pageExams(examPage, status, keyword, startTimeBegin, startTimeEnd);
+        IPage<Exam> examResult = pageExams(examPage, subjectId, status, keyword, startTimeBegin, startTimeEnd);
 
         // 转换为DTO
         List<ExamDTO> dtoList = examResult.getRecords().stream().map(exam -> {

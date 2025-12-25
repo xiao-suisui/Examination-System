@@ -98,15 +98,18 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         // 设置枚举名称（用于前端显示）
         if (question.getQuestionType() != null) {
             dto.setQuestionTypeName(question.getQuestionType().getName());
-
             dto.setQuestionType(question.getQuestionType().getCode());
         }
 
         if (question.getDifficulty() != null) {
             dto.setDifficultyName(question.getDifficulty().getName());
+            Integer difficultyCode = question.getDifficulty().getCode();
+            dto.setDifficulty(difficultyCode);
+
         }
         if (question.getAuditStatus() != null) {
             dto.setAuditStatusName(question.getAuditStatus().getName());
+            dto.setAuditStatus(question.getAuditStatus().getCode());
         }
 
         // 查询题库名称

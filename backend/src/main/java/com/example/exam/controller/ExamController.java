@@ -30,12 +30,13 @@ public class ExamController {
 
     private final ExamService examService;
 
-    @Operation(summary = "分页查询考试", description = "支持按状态、时间范围等条件筛选考试列表")
+    @Operation(summary = "分页查询考试", description = "支持按状态、科目、时间范围等条件筛选考试列表")
     @RequirePermission(value = "exam:view", desc = "查看考试")
     @GetMapping("/page")
-    public Result<IPage<Exam>> page(
+    public Result<IPage<com.example.exam.dto.ExamDTO>> page(
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
+            @Parameter(description = "科目ID") @RequestParam(required = false) Long subjectId,
             @Parameter(description = "考试状态（0-草稿,1-已发布,2-进行中,3-已结束,4-已取消）", example = "1") @RequestParam(required = false) Integer status,
             @Parameter(description = "考试标题关键词") @RequestParam(required = false) String keyword,
             @Parameter(description = "开始时间（起）") @RequestParam(required = false) LocalDateTime startTimeBegin,
@@ -45,7 +46,7 @@ public class ExamController {
         ExamStatus statusEnum = status != null ? ExamStatus.of(status) : null;
 
         Page<Exam> page = new Page<>(current, size);
-        IPage<Exam> result = examService.pageExams(page, statusEnum, keyword, startTimeBegin, startTimeEnd);
+        IPage<com.example.exam.dto.ExamDTO> result = examService.pageExamDTO(page, subjectId, statusEnum, keyword, startTimeBegin, startTimeEnd);
         return Result.success(result);
     }
 

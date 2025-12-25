@@ -20,21 +20,23 @@ public interface PaperService extends IService<Paper> {
     /**
      * 查询试卷列表（不分页）
      * @param keyword 试卷名称关键词
+     * @param subjectId 科目ID
      * @param bankId 题库ID
      * @param auditStatus 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
      * @return 试卷DTO列表
      */
-    java.util.List<PaperDTO> listPapers(String keyword, Long bankId, com.example.exam.common.enums.AuditStatus auditStatus);
+    java.util.List<PaperDTO> listPapers(String keyword, Long subjectId, Long bankId, com.example.exam.common.enums.AuditStatus auditStatus);
 
     /**
      * 分页查询试卷（返回DTO）
      * @param page 分页对象
      * @param keyword 试卷名称关键词
+     * @param subjectId 科目ID
      * @param bankId 题库ID
      * @param paperType 组卷方式：1-手动组卷，2-自动组卷，3-随机组卷
      * @param auditStatus 审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝
      */
-    IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, com.example.exam.common.enums.AuditStatus auditStatus);
+    IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long subjectId, Long bankId, PaperType paperType, com.example.exam.common.enums.AuditStatus auditStatus);
 
     /**
      * 查询试卷详情（含题目）

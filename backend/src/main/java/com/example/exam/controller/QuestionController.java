@@ -90,11 +90,16 @@ public class QuestionController {
                  dto.getBankId(), dto.getQuestionType(),
                  dto.getQuestionContent() != null ? dto.getQuestionContent().substring(0, Math.min(20, dto.getQuestionContent().length())) : "null");
 
+        // 校验题库ID
+        if (dto.getBankId() == null) {
+            return Result.error("题库不能为空");
+        }
+
         // 使用 MapStruct 转换DTO为实体（自动处理枚举类型转换和字段映射）
         Question question = questionConverter.fromSaveDTO(dto);
 
         // 注意：createUserId 和 orgId 已由 MyBatis-Plus 自动填充，无需手动设置
-        // 注意：subjectId 应由前端传入或在业务逻辑中设置
+        // 注意：subjectId 通过题库关联获取，或由前端直接传入
 
         // 设置默认状态
         if (question.getAuditStatus() == null) {

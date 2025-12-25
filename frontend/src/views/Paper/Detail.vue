@@ -3,7 +3,9 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <el-button @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon>
+          <ArrowLeft/>
+        </el-icon>
         返回
       </el-button>
       <div class="header-title">
@@ -38,9 +40,6 @@
                 {{ getPaperTypeName(paper.paperType) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="题库">
-              {{ paper.bankName || '未指定' }}
-            </el-descriptions-item>
             <el-descriptions-item label="总分">
               <span style="font-size: 18px; font-weight: bold; color: #409eff">
                 {{ paper.totalScore }} 分
@@ -71,25 +70,21 @@
           <template #header>
             <div class="card-header">
               <span>题目列表</span>
-              <div>
-                <el-button type="primary" size="small" @click="showQuestionSelector">
-                  <el-icon><Plus /></el-icon>
-                  添加题目
-                </el-button>
-                <el-button type="default" size="small" @click="handleManageQuestions" style="margin-left: 8px">
-                  <el-icon><Edit /></el-icon>
-                  管理题目
-                </el-button>
-              </div>
+              <el-button type="primary" size="small" @click="showQuestionSelector">
+                <el-icon>
+                  <Plus/>
+                </el-icon>
+                添加题目
+              </el-button>
             </div>
           </template>
 
           <!-- 按题型分组显示 -->
           <el-collapse v-model="activeCollapse">
             <el-collapse-item
-              v-for="(questions, type) in questionsByType"
-              :key="type"
-              :name="type"
+                v-for="(questions, type) in questionsByType"
+                :key="type"
+                :name="type"
             >
               <template #title>
                 <div class="collapse-title">
@@ -104,9 +99,9 @@
 
               <div class="question-list">
                 <div
-                  v-for="(question, index) in questions"
-                  :key="question.questionId"
-                  class="question-item"
+                    v-for="(question, index) in questions"
+                    :key="question.questionId"
+                    class="question-item"
                 >
                   <div class="question-number">{{ index + 1 }}</div>
                   <div class="question-content">
@@ -114,7 +109,7 @@
                     <div class="content-info">
                       <el-tag size="small">难度: {{ getDifficultyName(question.difficulty) }}</el-tag>
                       <el-tag size="small" type="warning" style="margin-left: 8px">
-                        {{ question.score }} 分
+                        {{ question.defaultScore }} 分
                       </el-tag>
                     </div>
                   </div>
@@ -122,13 +117,16 @@
                     <el-button link type="primary" @click="viewQuestion(question.questionId)">
                       查看
                     </el-button>
+                    <el-button link type="danger" @click="handleRemoveQuestion(question.questionId)">
+                      移除
+                    </el-button>
                   </div>
                 </div>
               </div>
             </el-collapse-item>
           </el-collapse>
 
-          <el-empty v-if="!paper.questions || paper.questions.length === 0" description="暂无题目" />
+          <el-empty v-if="!paper.questions || paper.questions.length === 0" description="暂无题目"/>
         </el-card>
       </el-col>
 
@@ -209,29 +207,29 @@
 
     <!-- 题目选择器 -->
     <QuestionSelector
-      v-model="questionSelectorVisible"
-      :existing-questions="paper.questions || []"
-      @confirm="handleQuestionsSelected"
+        v-model="questionSelectorVisible"
+        :existing-questions="paper.questions || []"
+        @confirm="handleQuestionsSelected"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Edit, Plus } from '@element-plus/icons-vue'
+import {computed, nextTick, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {ArrowLeft, Plus} from '@element-plus/icons-vue'
 import paperApi from '@/api/paper'
 import QuestionSelector from '@/components/QuestionSelector.vue'
 import {
-  QUESTION_TYPE,
-  getPaperTypeName,
-  getPaperTypeColor,
-  getPaperStatusName,
+  getDifficultyName,
   getPaperStatusColor,
-  getQuestionTypeName,
+  getPaperStatusName,
+  getPaperTypeColor,
+  getPaperTypeName,
   getQuestionTypeColor,
-  getDifficultyName
+  getQuestionTypeName,
+  QUESTION_TYPE
 } from '@/utils/enums'
 
 const route = useRoute()
@@ -304,11 +302,11 @@ const calculateStatistics = () => {
 
   const questions = paper.value.questions
   statistics.value = {
-    singleChoiceCount: questions.filter(q => q.questionType === 'SINGLE_CHOICE').length,
-    multipleChoiceCount: questions.filter(q => q.questionType === 'MULTIPLE_CHOICE').length,
-    trueFalseCount: questions.filter(q => q.questionType === 'TRUE_FALSE').length,
-    fillBlankCount: questions.filter(q => q.questionType === 'FILL_BLANK').length,
-    shortAnswerCount: questions.filter(q => q.questionType === 'SHORT_ANSWER').length,
+    singleChoiceCount: questions.filter(q => q.questionType === QUESTION_TYPE.SINGLE_CHOICE).length,
+    multipleChoiceCount: questions.filter(q => q.questionType === QUESTION_TYPE.MULTIPLE_CHOICE).length,
+    trueFalseCount: questions.filter(q => q.questionType === QUESTION_TYPE.TRUE_FALSE).length,
+    fillBlankCount: questions.filter(q => q.questionType === QUESTION_TYPE.FILL_BLANK).length,
+    shortAnswerCount: questions.filter(q => q.questionType === QUESTION_TYPE.SUBJECTIVE).length,
     easyCount: questions.filter(q => q.difficulty === 1).length,
     mediumCount: questions.filter(q => q.difficulty === 2).length,
     hardCount: questions.filter(q => q.difficulty === 3).length
@@ -317,7 +315,7 @@ const calculateStatistics = () => {
 
 // 计算某题型的总分
 const calculateTypeScore = (questions) => {
-  return questions.reduce((sum, q) => sum + (q.score || 0), 0)
+  return questions.reduce((sum, q) => sum + (q.defaultScore || 0), 0)
 }
 
 // 返回
@@ -327,22 +325,22 @@ const goBack = () => {
 
 // 预览
 const handlePreview = () => {
-  router.push({ name: 'PaperPreview', params: { id: paper.value.paperId } })
+  router.push({name: 'PaperPreview', params: {id: paper.value.paperId}})
 }
 
 // 编辑
 const handleEdit = () => {
   // 跳转到试卷列表页，并传递编辑参数
-  router.push({ name: 'Paper', query: { edit: paper.value.paperId } })
+  router.push({name: 'Paper', query: {edit: paper.value.paperId}})
 }
 
 // 删除
 const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除试卷"${paper.value.paperName}"吗？`,
-      '警告',
-      { type: 'warning' }
+        `确定要删除试卷"${paper.value.paperName}"吗？`,
+        '警告',
+        {type: 'warning'}
     )
 
     const res = await paperApi.deleteById(paper.value.paperId)
@@ -368,7 +366,7 @@ const handleQuestionsSelected = async (selectedQuestions) => {
     // 过滤出新添加的题目（排除已存在的）
     const existingIds = paper.value.questions ? paper.value.questions.map(q => q.questionId) : []
     const newQuestions = selectedQuestions.filter(
-      q => !existingIds.includes(q.questionId)
+        q => !existingIds.includes(q.questionId)
     )
 
     if (newQuestions.length === 0) {
@@ -395,16 +393,82 @@ const handleQuestionsSelected = async (selectedQuestions) => {
   }
 }
 
+// 移除题目
+const handleRemoveQuestion = async (questionId) => {
+  try {
+    await ElMessageBox.confirm(
+        '确定要从试卷中移除该题目吗？',
+        '提示',
+        {
+          type: 'warning',
+          confirmButtonText: '确定',
+          cancelButtonText: '取消'
+        }
+    )
 
-// 管理题目（跳转到试卷编辑页面的题目标签）
-const handleManageQuestions = () => {
-  // 跳转到试卷列表页，并传递编辑参数和标签参数
-  router.push({ name: 'Paper', query: { edit: paper.value.paperId, tab: 'questions' } })
+    // 调用API移除题目
+    const res = await paperApi.removeQuestions(paper.value.paperId, [questionId])
+
+    if (res.code === 200) {
+      ElMessage.success('移除成功')
+      // 重新加载试卷详情
+      await loadPaperDetail()
+      // 自动更新总分和及格分
+      await updatePaperScores()
+    } else {
+      ElMessage.error(res.message || '移除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('移除题目失败:', error)
+      ElMessage.error('移除失败')
+    }
+  }
 }
 
 // 查看题目
 const viewQuestion = (questionId) => {
-  router.push({ name: 'QuestionDetail', params: { id: questionId } })
+  router.push({name: 'QuestionDetail', params: {id: questionId}})
+}
+
+// 自动更新试卷总分和及格分
+const updatePaperScores = async () => {
+  try {
+    if (!paper.value.questions || paper.value.questions.length === 0) {
+      // 没有题目时，总分和及格分都设为0
+      const updateData = {
+        totalScore: 0,
+        passScore: 0
+      }
+      await paperApi.update(paper.value.paperId, updateData)
+      paper.value.totalScore = 0
+      paper.value.passScore = 0
+      return
+    }
+
+    // 计算总分（所有题目分数之和）
+    const totalScore = paper.value.questions.reduce((sum, q) => sum + (q.defaultScore || 0), 0)
+
+    // 计算及格分（总分的60%，四舍五入）
+    const passScore = Math.round(totalScore * 0.6)
+
+    // 更新到后端
+    const updateData = {
+      totalScore: totalScore,
+      passScore: passScore
+    }
+
+    const res = await paperApi.update(paper.value.paperId, updateData)
+
+    if (res.code === 200) {
+      // 更新本地数据
+      paper.value.totalScore = totalScore
+      paper.value.passScore = passScore
+      console.log(`试卷分数已更新：总分=${totalScore}，及格分=${passScore}`)
+    }
+  } catch (error) {
+    console.error('更新试卷分数失败:', error)
+  }
 }
 
 

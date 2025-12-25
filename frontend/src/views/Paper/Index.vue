@@ -89,7 +89,6 @@
         </el-table-column>
         <el-table-column prop="totalScore" label="总分" width="80" />
         <el-table-column prop="questionCount" label="题目数" width="80" />
-        <el-table-column prop="bankName" label="所属题库" width="150" show-overflow-tooltip />
         <el-table-column prop="auditStatus" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getAuditStatusColor(row.auditStatus)" v-if="row.auditStatus !== undefined">
@@ -123,11 +122,11 @@
       </div>
     </el-card>
 
-    <!-- 创建/编辑对话框 -->
+    <!-- 创建/编辑对话框（仅基础信息） -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="900px"
+      width="700px"
       :close-on-click-modal="false"
     >
       <el-form
@@ -143,6 +142,20 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="所属科目" prop="subjectId">
+              <SubjectSelector
+                v-model="formData.subjectId"
+                :only-managed="true"
+                placeholder="请选择科目"
+                style="width: 100%"
+                @change="handleFormSubjectChange"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="组卷方式" prop="paperType">
               <EnumSelect
                 v-model="formData.paperType"
@@ -151,9 +164,6 @@
               />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="题库" prop="bankId">
               <el-select v-model="formData.bankId" placeholder="请选择题库" style="width: 100%">
@@ -202,30 +212,14 @@
           />
         </el-form-item>
 
-        <el-form-item label="选择题目">
-          <el-button @click="showQuestionSelector">选择题目</el-button>
-          <span style="margin-left: 10px; color: #909399">
-            已选择 {{ selectedQuestions.length }} 道题目
-          </span>
-        </el-form-item>
-
-        <!-- 已选题目列表 -->
-        <el-form-item label="题目列表" v-if="selectedQuestions.length > 0">
-          <el-table :data="selectedQuestions" :row-key="row => row.questionId" style="width: 100%" max-height="300">
-            <el-table-column prop="questionContent" label="题目内容" show-overflow-tooltip />
-            <el-table-column prop="questionType" label="类型" width="80">
-              <template #default="{ row }">
-                <el-tag size="small">{{ getQuestionTypeName(row.questionType) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="score" label="分值" width="60" />
-            <el-table-column label="操作" width="80">
-              <template #default="{ row, $index }">
-                <el-button link type="danger" @click="removeQuestion($index)">移除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-form-item>
+        <el-alert
+          v-if="formData.paperId"
+          title="提示：题目管理请在试卷详情页进行"
+          type="info"
+          show-icon
+          :closable="false"
+          style="margin-bottom: 15px"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -285,14 +279,6 @@
         <el-button type="primary" @click="submitAutoGenerate">生成试卷</el-button>
       </template>
     </el-dialog>
-
-    <!-- 题目选择器 -->
-    <QuestionSelector
-      v-model="questionSelectorVisible"
-      :bank-id="formData.bankId"
-      :existing-questions="selectedQuestions"
-      @confirm="handleQuestionsConfirm"
-    />
   </div>
 </template>
 
@@ -301,7 +287,6 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, MagicStick } from '@element-plus/icons-vue'
-import QuestionSelector from '@/components/QuestionSelector.vue'
 import EnumSelect from '@/components/EnumSelect.vue'
 import SubjectSelector from '@/components/SubjectSelector.vue'
 import { useTableList } from '@/composables/useTableList'
@@ -314,8 +299,7 @@ import {
   getPaperTypeName,
   getPaperTypeColor,
   getAuditStatusName,
-  getAuditStatusColor,
-  getQuestionTypeName
+  getAuditStatusColor
 } from '@/utils/enums'
 import { required } from '@/utils/validate'
 
@@ -369,7 +353,16 @@ const handleSubjectChange = (subjectId) => {
   } else {
     loadQuestionBanks()
   }
-  handleSearch()
+}
+
+// 表单中科目变化（加载对应的题库）
+const handleFormSubjectChange = (subjectId) => {
+  formData.bankId = null
+  if (subjectId) {
+    loadQuestionBanks(subjectId)
+  } else {
+    loadQuestionBanks()
+  }
 }
 
 // ==================== 对话框 ====================
@@ -377,8 +370,6 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const submitLoading = ref(false)
 const formRef = ref(null)
-const selectedQuestions = ref([])
-const questionSelectorVisible = ref(false)
 
 // 智能组卷对话框
 const autoGenerateVisible = ref(false)
@@ -398,17 +389,18 @@ const formData = reactive({
   paperId: null,
   paperName: '',
   paperType: PAPER_TYPE.MANUAL,
+  subjectId: null,
   bankId: null,
   passScore: 60,
   totalScore: 100,
-  description: '',
-  questions: []
+  description: ''
 })
 
 // 表单验证规则（使用统一验证函数）
 const formRules = {
   paperName: [required('请输入试卷名称')],
   paperType: [required('请选择组卷方式', 'change')],
+  subjectId: [required('请选择所属科目', 'change')],
   bankId: [required('请选择题库', 'change')]
 }
 
@@ -424,15 +416,27 @@ const handleCreate = () => {
 
 // 编辑
 const handleEdit = async (row) => {
-  dialogTitle.value = '编辑试卷'
+  dialogTitle.value = '编辑试卷基础信息'
 
   // 如果传入的是试卷ID（从URL参数来），需要先加载试卷数据
   if (typeof row === 'number' || typeof row === 'string') {
     try {
       const res = await paperApi.getById(row)
       if (res.code === 200 && res.data) {
-        Object.assign(formData, res.data)
-        selectedQuestions.value = res.data.questions || []
+        Object.assign(formData, {
+          paperId: res.data.paperId,
+          paperName: res.data.paperName,
+          paperType: res.data.paperType,
+          subjectId: res.data.subjectId,
+          bankId: res.data.bankId,
+          passScore: res.data.passScore,
+          totalScore: res.data.totalScore,
+          description: res.data.description
+        })
+        // 加载该科目的题库
+        if (res.data.subjectId) {
+          loadQuestionBanks(res.data.subjectId)
+        }
       } else {
         ElMessage.error('加载试卷数据失败')
         return
@@ -444,8 +448,18 @@ const handleEdit = async (row) => {
     }
   } else {
     // 如果传入的是完整的试卷对象
-    Object.assign(formData, row)
-    selectedQuestions.value = row.questions || []
+    Object.assign(formData, {
+      paperId: row.paperId,
+      paperName: row.paperName,
+      paperType: row.paperType,
+      subjectId: row.subjectId,
+      bankId: row.bankId,
+      description: row.description
+    })
+    // 加载该科目的题库
+    if (row.subjectId) {
+      loadQuestionBanks(row.subjectId)
+    }
   }
 
   dialogVisible.value = true
@@ -594,33 +608,6 @@ const submitAutoGenerate = async () => {
   }
 }
 
-// 选择题目
-const showQuestionSelector = () => {
-  if (!formData.bankId) {
-    ElMessage.warning('请先选择题库')
-    return
-  }
-  questionSelectorVisible.value = true
-}
-
-// 确认选择的题目
-const handleQuestionsConfirm = (questions) => {
-  selectedQuestions.value = questions
-  // 更新表单数据
-  formData.questions = questions
-  // 自动计算总分
-  const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0)
-  formData.totalScore = totalScore
-  ElMessage.success(`已选择 ${questions.length} 道题目，总分 ${totalScore} 分`)
-}
-
-// 移除题目
-const removeQuestion = (index) => {
-  selectedQuestions.value.splice(index, 1)
-  formData.questions = selectedQuestions.value
-  // 重新计算总分
-  formData.totalScore = selectedQuestions.value.reduce((sum, q) => sum + (q.score || 0), 0)
-}
 
 // 提交表单
 const handleSubmit = async () => {
@@ -653,6 +640,7 @@ const resetForm = () => {
   formData.paperId = null
   formData.paperName = ''
   formData.paperType = PAPER_TYPE.MANUAL  // 默认手动组卷
+  formData.subjectId = null
   formData.bankId = null
   formData.passScore = 60
   formData.totalScore = 100
@@ -675,11 +663,6 @@ onMounted(async () => {
     await nextTick()
     await handleEdit(edit)
 
-    // TODO: 如果有 tab 参数，切换到对应标签页（如果对话框有标签页的话）
-    if (tab === 'questions') {
-      // 可以在这里添加切换到题目标签页的逻辑
-      console.log('切换到题目标签页:', tab)
-    }
 
     // 清除 URL 参数，避免刷新页面时重复打开
     router.replace({ query: {} })

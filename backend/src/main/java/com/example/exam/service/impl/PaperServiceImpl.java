@@ -43,11 +43,11 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     private final com.example.exam.mapper.paper.PaperRuleMapper paperRuleMapper;
     private final com.example.exam.mapper.exam.ExamMapper examMapper;
     private final com.example.exam.service.QuestionService questionService;
-
     @Override
-    public List<PaperDTO> listPapers(String keyword, Long bankId, AuditStatus auditStatus) {
+    public List<PaperDTO> listPapers(String keyword, Long subjectId, Long bankId, AuditStatus auditStatus) {
         LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(keyword != null && !keyword.isEmpty(), Paper::getPaperName, keyword)
+               .eq(subjectId != null, Paper::getSubjectId, subjectId)
                .eq(auditStatus != null, Paper::getAuditStatus, auditStatus)
                .orderByDesc(Paper::getCreateTime);
 
@@ -61,9 +61,10 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     }
 
     @Override
-    public IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long bankId, PaperType paperType, AuditStatus auditStatus) {
+    public IPage<PaperDTO> pagePapers(Page<Paper> page, String keyword, Long subjectId, Long bankId, PaperType paperType, AuditStatus auditStatus) {
         LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(keyword != null && !keyword.isEmpty(), Paper::getPaperName, keyword)
+               .eq(subjectId != null, Paper::getSubjectId, subjectId)
                .eq(paperType != null, Paper::getPaperType, paperType)
                .eq(auditStatus != null, Paper::getAuditStatus, auditStatus)
                .orderByDesc(Paper::getCreateTime);

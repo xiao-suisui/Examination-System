@@ -39,6 +39,12 @@ public class Paper implements Serializable {
     @TableId(value = "paper_id", type = IdType.AUTO)
     private Long paperId;
 
+    /**
+     * 所属科目ID
+     */
+    @TableField("subject_id")
+    private Long subjectId;
+
    /**
      * 题库ID
      */

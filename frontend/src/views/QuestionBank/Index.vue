@@ -194,6 +194,9 @@ const formRules = {
     { required: true, message: '请输入题库名称', trigger: 'blur' },
     { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
   ],
+  subjectId: [
+    { required: true, message: '请选择所属科目', trigger: 'change' }
+  ],
   bankType: [
     { required: true, message: '请选择题库类型', trigger: 'change' }
   ]
@@ -207,7 +210,8 @@ const loadQuestionBanks = async () => {
       current: pagination.current,
       size: pagination.size,
       keyword: searchForm.keyword || undefined,
-      bankType: searchForm.bankType || undefined
+      bankType: searchForm.bankType || undefined,
+      subjectId: searchForm.subjectId || undefined
     }
     const res = await questionBankApi.page(params)
     if (res.code === 200) {
@@ -329,6 +333,7 @@ const handleSubmit = async () => {
 const resetForm = () => {
   formData.bankId = null
   formData.bankName = ''
+  formData.subjectId = null
   formData.bankType = BANK_TYPE.PUBLIC
   formData.description = ''
   formData.sort = 0

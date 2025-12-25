@@ -40,12 +40,13 @@ public class PaperController {
     @GetMapping("/list")
     public Result<java.util.List<PaperDTO>> list(
             @Parameter(description = "试卷名称关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "科目ID") @RequestParam(required = false) Long subjectId,
             @Parameter(description = "题库ID") @RequestParam(required = false) Long bankId,
             @Parameter(description = "审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝")
-            @RequestParam(required = false) Integer auditStatus) {
+            @RequestParam(required = false) Integer auditStatus){
         // 将 Integer 转换为 AuditStatus 枚举
         AuditStatus status = auditStatus != null ? AuditStatus.of(auditStatus) : null;
-        java.util.List<PaperDTO> list = paperService.listPapers(keyword, bankId, status);
+        java.util.List<PaperDTO> list = paperService.listPapers(keyword, subjectId, bankId, status);
         return Result.success(list);
     }
 
@@ -57,15 +58,20 @@ public class PaperController {
             @Parameter(description = "当前页码", example = "1") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Long size,
             @Parameter(description = "试卷名称关键词") @RequestParam(required = false) String keyword,
+
+            @Parameter(description = "科目ID") @RequestParam(required = false) Long subjectId,
             @Parameter(description = "题库ID") @RequestParam(required = false) Long bankId,
             @Parameter(description = "组卷方式：1-手动组卷，2-自动组卷，3-随机组卷")
-            @RequestParam(required = false) PaperType paperType,
+            @RequestParam(required = false) Integer paperType,
             @Parameter(description = "审核状态：0-草稿，1-待审核，2-已通过，3-已拒绝")
-            @RequestParam(required = false) AuditStatus auditStatus) {
+            @RequestParam(required = false) Integer auditStatus) {
 
-        // Spring MVC 通过 @JsonCreator 自动转换，无需手动处理
+        // 将 Integer 转换为枚举类型
+        PaperType paperTypeEnum = paperType != null ? PaperType.of(paperType) : null;
+        AuditStatus auditStatusEnum = auditStatus != null ? AuditStatus.of(auditStatus) : null;
+
         Page<Paper> page = new Page<>(current, size);
-        IPage<PaperDTO> result = paperService.pagePapers(page, keyword, bankId, paperType, auditStatus);
+        IPage<PaperDTO> result = paperService.pagePapers(page, keyword, subjectId, bankId, paperTypeEnum, auditStatusEnum);
         return Result.success(result);
     }
 
@@ -97,6 +103,11 @@ public class PaperController {
     @PostMapping
     public Result<Long> create(
             @Parameter(description = "试卷信息", required = true) @RequestBody Paper paper) {
+        // 校验科目ID
+        if (paper.getSubjectId() == null) {
+            return Result.error("所属科目不能为空");
+        }
+
         boolean success = paperService.save(paper);
         return success ? Result.success("创建成功", paper.getPaperId()) : Result.error("创建失败");
     }
