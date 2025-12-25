@@ -1,5 +1,5 @@
 /**
- * 认证授权 API
+ * 认证授权
  * @description 对应后端 AuthController (/api/auth/**)
  */
 
