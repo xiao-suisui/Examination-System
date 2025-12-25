@@ -163,6 +163,7 @@ public class Exam implements Serializable {
     @TableField("show_score_immediately")
     private Integer showScoreImmediately;
 
+
     /**
      * 组织ID
      */
