@@ -7,7 +7,7 @@ import request from '@/utils/request'
 
 export default {
   /**
-   * 用户登录
+   *
    * @param {Object} data {username, password}
    * @returns {Promise}
    */
