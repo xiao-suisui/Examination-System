@@ -2,7 +2,9 @@ package com.example.exam.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.exam.entity.exam.Exam;
 import com.example.exam.entity.exam.ExamUser;
+import com.example.exam.mapper.exam.ExamMapper;
 import com.example.exam.mapper.exam.ExamUserMapper;
 import com.example.exam.service.ExamUserService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 /**
  * 考试考生关联ServiceImpl
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ExamUserServiceImpl extends ServiceImpl<ExamUserMapper, ExamUser> implements ExamUserService {
+
+    private final ExamMapper examMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -93,10 +97,30 @@ public class ExamUserServiceImpl extends ServiceImpl<ExamUserMapper, ExamUser> i
 
     @Override
     public boolean hasExamPermission(Long examId, Long userId) {
+        // 1. 检查考试是否存在
+        Exam exam = examMapper.selectById(examId);
+        if (exam == null) {
+            log.warn("考试不存在: examId={}", examId);
+            return false;
+        }
+
+        // 2. 如果考试范围类型为空或为0，表示开放考试，所有学生都可以参加
+        if (exam.getExamRangeType() == null || exam.getExamRangeType() == 0) {
+            log.info("开放考试，允许用户参加: examId={}, userId={}", examId, userId);
+            return true;
+        }
+
+        // 3. 否则检查 exam_user 表中是否有该用户的记录
         LambdaQueryWrapper<ExamUser> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ExamUser::getExamId, examId);
         queryWrapper.eq(ExamUser::getUserId, userId);
-        return count(queryWrapper) > 0;
+        boolean hasPermission = count(queryWrapper) > 0;
+
+        if (!hasPermission) {
+            log.warn("用户没有参加考试的权限: examId={}, userId={}", examId, userId);
+        }
+
+        return hasPermission;
     }
 
     @Override

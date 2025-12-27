@@ -386,13 +386,13 @@ const isTimeWarning = (exam) => {
 
 // 开始考试
 const handleStartExam = (exam) => {
-  router.push({ name: 'ExamStart', params: { examId: exam.examId } })
+  router.push({ name: 'StudentExamStart', params: { examId: exam.examId } })
 }
 
 // 查看结果
 const handleViewResult = (exam) => {
   // TODO: 获取sessionId后跳转
-  router.push({ name: 'ExamResult', params: { sessionId: 'temp-session-id' } })
+  router.push({ name: 'StudentExamResult', params: { sessionId: 'temp-session-id' } })
 }
 
 // 获取状态标签类型

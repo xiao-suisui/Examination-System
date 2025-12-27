@@ -7,7 +7,7 @@ import request from '@/utils/request'
 // 开始考试
 export function startExam(examId, userId) {
   return request({
-    url: `/api/student/exam/${examId}/start`,
+    url: `/student/exam/${examId}/start`,
     method: 'post',
     params: { userId }
   })
@@ -16,7 +16,7 @@ export function startExam(examId, userId) {
 // 获取考试会话信息
 export function getSession(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}`,
+    url: `/student/exam/session/${sessionId}`,
     method: 'get'
   })
 }
@@ -24,7 +24,7 @@ export function getSession(sessionId) {
 // 保存单个答案
 export function saveAnswer(sessionId, answer) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/answer`,
+    url: `/student/exam/session/${sessionId}/answer`,
     method: 'post',
     data: answer
   })
@@ -33,7 +33,7 @@ export function saveAnswer(sessionId, answer) {
 // 批量保存答案
 export function saveAnswers(sessionId, answers) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/answers`,
+    url: `/student/exam/session/${sessionId}/answers`,
     method: 'post',
     data: { answers }
   })
@@ -42,7 +42,7 @@ export function saveAnswers(sessionId, answers) {
 // 获取答案列表
 export function getAnswers(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/answers`,
+    url: `/student/exam/session/${sessionId}/answers`,
     method: 'get'
   })
 }
@@ -50,7 +50,7 @@ export function getAnswers(sessionId) {
 // 获取单个答案
 export function getAnswer(sessionId, questionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/answer/${questionId}`,
+    url: `/student/exam/session/${sessionId}/answer/${questionId}`,
     method: 'get'
   })
 }
@@ -58,7 +58,7 @@ export function getAnswer(sessionId, questionId) {
 // 提交考试
 export function submitExam(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/submit`,
+    url: `/student/exam/session/${sessionId}/submit`,
     method: 'post'
   })
 }
@@ -66,7 +66,7 @@ export function submitExam(sessionId) {
 // 记录切屏
 export function recordTabSwitch(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/tab-switch`,
+    url: `/student/exam/session/${sessionId}/tab-switch`,
     method: 'post'
   })
 }
@@ -74,7 +74,7 @@ export function recordTabSwitch(sessionId) {
 // 心跳
 export function heartbeat(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/heartbeat`,
+    url: `/student/exam/session/${sessionId}/heartbeat`,
     method: 'post'
   })
 }
@@ -82,8 +82,17 @@ export function heartbeat(sessionId) {
 // 获取考试进度
 export function getProgress(sessionId) {
   return request({
-    url: `/api/student/exam/session/${sessionId}/progress`,
+    url: `/student/exam/session/${sessionId}/progress`,
     method: 'get'
+  })
+}
+
+// 记录违规行为
+export function recordViolation(sessionId, data) {
+  return request({
+    url: `/student/exam/session/${sessionId}/violation`,
+    method: 'post',
+    data
   })
 }
 
@@ -97,6 +106,7 @@ export default {
   submitExam,
   recordTabSwitch,
   heartbeat,
-  getProgress
+  getProgress,
+  recordViolation
 }
 

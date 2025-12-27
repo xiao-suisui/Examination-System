@@ -25,6 +25,7 @@ public interface ExamConverter {
      * 同名属性自动映射，枚举类型直接映射
      */
     @Mapping(target = "paperName", ignore = true)         // 需要关联查询
+    @Mapping(target = "subjectName", ignore = true)       // 科目名称需要关联查询
     @Mapping(target = "examStatusName", ignore = true)    // 状态名称由前端根据examStatus枚举获取
     @Mapping(target = "createUserName", ignore = true)    // 创建人姓名需要关联查询
     @Mapping(target = "totalParticipants", ignore = true) // 统计字段

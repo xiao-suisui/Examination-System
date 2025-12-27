@@ -7,7 +7,7 @@ import request from '@/utils/request'
 // 获取考试的考生列表
 export function getExamStudents(examId) {
   return request({
-    url: `/api/exam/${examId}/students`,
+    url: `/exam/${examId}/students`,
     method: 'get'
   })
 }
@@ -15,7 +15,7 @@ export function getExamStudents(examId) {
 // 添加考生到考试
 export function addStudentsToExam(examId, userIds) {
   return request({
-    url: `/api/exam/${examId}/students`,
+    url: `/exam/${examId}/students`,
     method: 'post',
     data: { userIds }
   })
@@ -24,7 +24,7 @@ export function addStudentsToExam(examId, userIds) {
 // 移除考生
 export function removeStudent(examId, userId) {
   return request({
-    url: `/api/exam/${examId}/students/${userId}`,
+    url: `/exam/${examId}/students/${userId}`,
     method: 'delete'
   })
 }
@@ -32,7 +32,7 @@ export function removeStudent(examId, userId) {
 // 检查考试权限
 export function checkExamPermission(examId, userId) {
   return request({
-    url: `/api/exam/${examId}/students/check-permission`,
+    url: `/exam/${examId}/students/check-permission`,
     method: 'get',
     params: { userId }
   })

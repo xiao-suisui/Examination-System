@@ -8,14 +8,19 @@ import com.example.exam.common.enums.ExamStatus;
 import com.example.exam.entity.exam.Exam;
 import com.example.exam.entity.exam.ExamAnswer;
 import com.example.exam.entity.exam.ExamSession;
+import com.example.exam.entity.exam.ExamViolation;
+import com.example.exam.mapper.exam.ExamAnswerMapper;
 import com.example.exam.mapper.exam.ExamMapper;
 import com.example.exam.mapper.exam.ExamSessionMapper;
+import com.example.exam.mapper.exam.ExamViolationMapper;
+import com.example.exam.service.AutoGradingService;
 import com.example.exam.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,6 +40,9 @@ import java.util.UUID;
 public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamSession> implements ExamSessionService {
 
     private final ExamMapper examMapper;
+    private final ExamViolationMapper examViolationMapper;
+    private final ExamAnswerMapper examAnswerMapper;
+    private final AutoGradingService autoGradingService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -139,6 +147,12 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
                 return false;
             }
 
+            // 检查会话状态
+            if (session.getSessionStatus() != ExamSessionStatus.IN_PROGRESS) {
+                log.warn("会话状态不正确，无法提交: sessionId={}, status={}", sessionId, session.getSessionStatus());
+                return false;
+            }
+
             // 更新会话状态
             LocalDateTime now = LocalDateTime.now();
             session.setSubmitTime(now);
@@ -150,17 +164,77 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
                 session.setDuration((int) duration.toMinutes());
             }
 
+            // 保存提交状态
             int result = baseMapper.updateById(session);
 
             if (result > 0) {
-                log.info("提交考试成功: sessionId={}", sessionId);
-                // TODO: 触发自动阅卷
+                log.info("提交考试成功: sessionId={}, status={}", sessionId, session.getSessionStatus());
                 return true;
             }
 
             return false;
         } catch (Exception e) {
             log.error("提交考试失败", e);
+            return false;
+        }
+    }
+
+    /**
+     * 执行自动阅卷（独立事务，不影响提交）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void doAutoGrading(String sessionId) {
+        try {
+            log.info("开始自动阅卷: sessionId={}", sessionId);
+            BigDecimal objectiveScore = autoGradingService.gradeSession(sessionId);
+
+            // 重新获取会话
+            ExamSession session = baseMapper.selectById(sessionId);
+            if (session == null) {
+                return;
+            }
+
+            session.setObjectiveScore(objectiveScore);
+
+            // 检查是否有主观题需要人工批改
+            boolean hasSubjectiveQuestions = checkHasSubjectiveQuestions(sessionId);
+
+            if (hasSubjectiveQuestions) {
+                // 有主观题，保持SUBMITTED状态
+                log.info("考试包含主观题，等待人工批改: sessionId={}, objectiveScore={}", sessionId, objectiveScore);
+            } else {
+                // 没有主观题，直接计算总分
+                session.setTotalScore(objectiveScore);
+                session.setSessionStatus(ExamSessionStatus.GRADED);
+                log.info("自动阅卷完成: sessionId={}, totalScore={}", sessionId, objectiveScore);
+            }
+
+            baseMapper.updateById(session);
+        } catch (Exception e) {
+            log.error("自动阅卷失败: sessionId={}", sessionId, e);
+            // 不抛出异常，让阅卷失败不影响其他操作
+        }
+    }
+
+    /**
+     * 检查会话中是否包含未批改的题目（主观题）
+     */
+    private boolean checkHasSubjectiveQuestions(String sessionId) {
+        try {
+            // 查询该会话中 score 为 null 的答案数量
+            // 自动批改后，客观题的 score 会有值，主观题的 score 仍为 null
+            LambdaQueryWrapper<ExamAnswer> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ExamAnswer::getSessionId, sessionId)
+                   .isNull(ExamAnswer::getScore);
+
+            long count = examAnswerMapper.selectCount(wrapper);
+            boolean hasSubjective = count > 0;
+
+            log.info("检查主观题: sessionId={}, 未批改数量={}", sessionId, count);
+            return hasSubjective;
+        } catch (Exception e) {
+            log.error("检查主观题失败: sessionId={}", sessionId, e);
             return false;
         }
     }
@@ -330,6 +404,63 @@ public class ExamSessionServiceImpl extends ServiceImpl<ExamSessionMapper, ExamS
             }
         } catch (Exception e) {
             log.error("更新心跳失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int recordViolation(String sessionId, String violationType, String violationDetail, Integer severity) {
+        try {
+            // 1. 检查会话是否存在
+            ExamSession session = baseMapper.selectById(sessionId);
+            if (session == null) {
+                log.error("会话不存在: sessionId={}", sessionId);
+                return 0;
+            }
+
+            // 2. 创建违规记录
+            ExamViolation violation = ExamViolation.builder()
+                    .sessionId(sessionId)
+                    .examId(session.getExamId())
+                    .userId(session.getUserId())
+                    .violationType(violationType)
+                    .violationTime(LocalDateTime.now())
+                    .violationDetail(violationDetail)
+                    .severity(severity != null ? severity : 1)
+                    .build();
+
+            examViolationMapper.insert(violation);
+
+            // 3. 统计总违规次数
+            Integer totalCount = examViolationMapper.countBySessionId(sessionId);
+
+            log.warn("记录违规行为: sessionId={}, type={}, severity={}, totalCount={}",
+                    sessionId, violationType, severity, totalCount);
+
+            // 4. 检查是否需要强制终止考试
+            Exam exam = examMapper.selectById(session.getExamId());
+            if (exam != null && exam.getCutScreenLimit() != null) {
+                // 如果切屏类型的违规，也更新切屏次数
+                if ("TAB_SWITCH".equals(violationType)) {
+                    recordTabSwitch(sessionId);
+                }
+
+                // 如果严重程度为5（致命）或总违规次数超过限制的2倍，强制终止
+                if (severity != null && severity >= 5) {
+                    log.warn("检测到严重违规，强制提交: sessionId={}, type={}, severity={}",
+                            sessionId, violationType, severity);
+                    submitExam(sessionId);
+                } else if (totalCount > exam.getCutScreenLimit() * 2) {
+                    log.warn("违规次数过多，强制提交: sessionId={}, count={}, limit={}",
+                            sessionId, totalCount, exam.getCutScreenLimit());
+                    submitExam(sessionId);
+                }
+            }
+
+            return totalCount;
+        } catch (Exception e) {
+            log.error("记录违规行为失败", e);
+            return 0;
         }
     }
 }

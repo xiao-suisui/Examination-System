@@ -1,5 +1,17 @@
 <template>
   <div class="student-exam-page">
+    <!-- 异常检测组件 -->
+    <ExamMonitor
+      v-if="sessionId"
+      ref="monitorRef"
+      :session-id="sessionId"
+      :exam-id="examId"
+      :config="monitorConfig"
+      @violation="handleViolation"
+      @limit-reached="handleLimitReached"
+      @auto-submit="handleAutoSubmit"
+    />
+
     <!-- 顶部导航栏 -->
     <div class="exam-header">
       <div class="header-left">
@@ -176,11 +188,15 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Star } from '@element-plus/icons-vue'
+import ExamMonitor from '@/components/ExamMonitor.vue'
 import studentExamApi from '@/api/studentExam'
 import paperApi from '@/api/paper'
 
 const route = useRoute()
 const router = useRouter()
+
+// Refs
+const monitorRef = ref(null)
 
 // 数据
 const examId = ref(route.params.examId)
@@ -192,6 +208,19 @@ const markedQuestions = ref(new Set()) // 标记的题目ID
 const currentQuestionIndex = ref(0)
 const remainingTime = ref(0) // 剩余秒数
 const selectedOptions = ref([]) // 多选题临时选项
+
+// 监控配置
+const monitorConfig = ref({
+  enableTabSwitch: true,
+  enableCopy: true,
+  enablePaste: true,
+  enableRightClick: true,
+  enableFullscreen: false, // 默认不强制全屏，根据考试配置
+  enableIdleTimeout: true,
+  tabSwitchLimit: 3,
+  idleTimeout: 300,
+  autoSubmitOnViolation: false
+})
 
 let timer = null
 let heartbeatTimer = null
@@ -478,6 +507,24 @@ const handleVisibilityChange = () => {
       console.error('记录切屏失败:', err)
     })
   }
+}
+
+// 处理违规事件
+const handleViolation = (violation) => {
+  console.log('[违规检测]', violation)
+  // 可以在这里添加额外的处理逻辑
+}
+
+// 处理达到违规限制
+const handleLimitReached = (total) => {
+  console.error('[违规限制] 已达到上限:', total)
+  // 可以在这里添加额外的处理逻辑
+}
+
+// 自动提交（因违规）
+const handleAutoSubmit = () => {
+  console.warn('[自动提交] 因违规次数过多')
+  handleSubmit()
 }
 
 // 初始化

@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
     private final ExamConverter examConverter;
     private final com.example.exam.mapper.exam.ExamUserMapper examUserMapper;
     private final com.example.exam.mapper.system.SysUserMapper userMapper;
+    private final com.example.exam.mapper.subject.SubjectMapper subjectMapper;
 
     @Override
     public IPage<Exam> pageExams(Page<Exam> page, Long subjectId, ExamStatus status, String keyword,
@@ -104,6 +106,67 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
         Page<ExamDTO> dtoPage = new Page<>(examResult.getCurrent(), examResult.getSize(), examResult.getTotal());
         dtoPage.setRecords(dtoList);
         return dtoPage;
+    }
+
+    @Override
+    public ExamDTO getExamDTOById(Long examId) {
+        // 1. 查询考试基本信息
+        Exam exam = this.getById(examId);
+        if (exam == null) {
+            log.warn("考试不存在: examId={}", examId);
+            return null;
+        }
+
+        // 2. 使用Converter进行基础转换
+        ExamDTO dto = examConverter.toDTO(exam);
+
+        // 3. 查询试卷名称
+        if (exam.getPaperId() != null) {
+            Paper paper = paperMapper.selectById(exam.getPaperId());
+            if (paper != null) {
+                dto.setPaperName(paper.getPaperName());
+            }
+        }
+
+        // 4. 查询科目名称
+        if (exam.getSubjectId() != null) {
+            try {
+                com.example.exam.entity.subject.Subject subject = subjectMapper.selectById(exam.getSubjectId());
+                if (subject != null) {
+                    dto.setSubjectName(subject.getSubjectName());
+                }
+            } catch (Exception e) {
+                log.warn("查询科目名称失败: subjectId={}", exam.getSubjectId(), e);
+            }
+        }
+
+        // 5. 查询创建人姓名
+        if (exam.getCreateUserId() != null) {
+            com.example.exam.entity.system.SysUser user = userMapper.selectById(exam.getCreateUserId());
+            if (user != null) {
+                dto.setCreateUserName(user.getRealName() != null ? user.getRealName() : user.getUsername());
+            }
+        }
+
+        // 6. 设置状态名称
+        if (exam.getExamStatus() != null) {
+            dto.setExamStatusName(exam.getExamStatus().getName());
+        }
+
+        // 7. 查询参与人数和已提交人数
+        LambdaQueryWrapper<ExamSession> sessionWrapper = new LambdaQueryWrapper<>();
+        sessionWrapper.eq(ExamSession::getExamId, examId);
+        Long totalCount = examSessionMapper.selectCount(sessionWrapper);
+        dto.setTotalParticipants(totalCount != null ? totalCount.intValue() : 0);
+
+        sessionWrapper.clear();
+        sessionWrapper.eq(ExamSession::getExamId, examId)
+                     .eq(ExamSession::getSessionStatus, ExamSessionStatus.SUBMITTED);
+        Long submittedCount = examSessionMapper.selectCount(sessionWrapper);
+        dto.setSubmittedCount(submittedCount != null ? submittedCount.intValue() : 0);
+
+        log.info("查询考试详情DTO成功: examId={}, examName={}", examId, dto.getExamName());
+        return dto;
     }
 
     @Override
@@ -315,13 +378,33 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
 
     @Override
     public List<Exam> getExamsByUser(Long userId, Long orgId) {
+        // 1. 查询该学生在 exam_user 表中的考试ID列表
+        LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> examUserWrapper = new LambdaQueryWrapper<>();
+        examUserWrapper.eq(com.example.exam.entity.exam.ExamUser::getUserId, userId)
+                      .select(com.example.exam.entity.exam.ExamUser::getExamId);
+
+        List<com.example.exam.entity.exam.ExamUser> examUsers = examUserMapper.selectList(examUserWrapper);
+
+        if (examUsers == null || examUsers.isEmpty()) {
+            log.info("学生没有可参加的考试: userId={}", userId);
+            return new ArrayList<>();
+        }
+
+        // 2. 提取考试ID列表
+        List<Long> examIds = examUsers.stream()
+                .map(com.example.exam.entity.exam.ExamUser::getExamId)
+                .collect(Collectors.toList());
+
+        // 3. 查询这些考试的详细信息（只查询已发布或进行中的考试）
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(Exam::getExamStatus, ExamStatus.PUBLISHED, ExamStatus.IN_PROGRESS)
-               .and(w -> w.apply("exam_range_type = 1 AND FIND_IN_SET({0}, exam_range_ids) > 0", userId)
-                          .or()
-                          .apply("exam_range_type IN (2, 3) AND FIND_IN_SET({0}, exam_range_ids) > 0", orgId))
+        wrapper.in(Exam::getExamId, examIds)
+               .in(Exam::getExamStatus, ExamStatus.PUBLISHED, ExamStatus.IN_PROGRESS, ExamStatus.ENDED)
                .orderByDesc(Exam::getStartTime);
-        return this.list(wrapper);
+
+        List<Exam> exams = this.list(wrapper);
+        log.info("查询学生考试列表: userId={}, examCount={}", userId, exams.size());
+
+        return exams;
     }
 
     @Override
@@ -372,18 +455,39 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
 
     @Override
     public List<ExamDTO> getMyExams(Long userId, ExamStatus status) {
+        // 1. 查询该学生在 exam_user 表中的考试ID列表
+        LambdaQueryWrapper<com.example.exam.entity.exam.ExamUser> examUserWrapper = new LambdaQueryWrapper<>();
+        examUserWrapper.eq(com.example.exam.entity.exam.ExamUser::getUserId, userId)
+                      .select(com.example.exam.entity.exam.ExamUser::getExamId);
+
+        List<com.example.exam.entity.exam.ExamUser> examUsers = examUserMapper.selectList(examUserWrapper);
+
+        if (examUsers == null || examUsers.isEmpty()) {
+            log.info("学生没有可参加的考试: userId={}", userId);
+            return new ArrayList<>();
+        }
+
+        // 2. 提取考试ID列表
+        List<Long> examIds = examUsers.stream()
+                .map(com.example.exam.entity.exam.ExamUser::getExamId)
+                .collect(Collectors.toList());
+
+        // 3. 查询这些考试的详细信息
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(status != null, Exam::getExamStatus, status)
-               .orderByDesc(Exam::getCreateTime);
+        wrapper.in(Exam::getExamId, examIds)
+               .eq(status != null, Exam::getExamStatus, status)
+               .orderByDesc(Exam::getStartTime);
 
         List<Exam> exams = this.list(wrapper);
 
-        // 转换为 DTO 并添加学生相关信息
+        log.info("查询学生考试列表: userId={}, examCount={}", userId, exams.size());
+
+        // 4. 转换为 DTO 并添加学生相关信息
         return exams.stream()
                 .map(exam -> {
                     ExamDTO dto = examConverter.toDTO(exam);
 
-                    // 查询学生是否已参加
+                    // 查询学生是否已参加（是否有考试会话）
                     LambdaQueryWrapper<ExamSession> sessionWrapper = new LambdaQueryWrapper<>();
                     sessionWrapper.eq(ExamSession::getExamId, exam.getExamId())
                                   .eq(ExamSession::getUserId, userId);
@@ -393,6 +497,10 @@ public class ExamServiceImpl extends ServiceImpl<ExamMapper, Exam> implements Ex
                         dto.setHasJoined(true);
                         dto.setSessionId(session.getSessionId());
                         dto.setSessionStatus(session.getSessionStatus());
+                        // 设置学生得分
+                        if (session.getTotalScore() != null) {
+                            dto.setStudentScore(session.getTotalScore());
+                        }
                     } else {
                         dto.setHasJoined(false);
                     }

@@ -61,6 +61,12 @@
             <span>科目管理</span>
           </el-menu-item>
 
+          <!-- 阅卷管理 -->
+          <el-menu-item index="/grading">
+            <el-icon><EditPen /></el-icon>
+            <span>阅卷管理</span>
+          </el-menu-item>
+
           <!-- 系统管理（仅管理员可见） -->
           <el-sub-menu v-if="isAdmin" index="system-manage">
             <template #title>

@@ -44,15 +44,19 @@ public class ExamAnswerServiceImpl extends ServiceImpl<ExamAnswerMapper, ExamAns
             ExamAnswer existing = getOne(wrapper);
 
             if (existing != null) {
-                // 更新现有答案
-                answer.setAnswerId(existing.getAnswerId());
-                return updateById(answer);
+                // 更新现有答案 - 只更新答案内容，保留其他字段
+                existing.setUserAnswer(answer.getUserAnswer());
+                existing.setOptionIds(answer.getOptionIds());
+                existing.setAnswerOrder(answer.getAnswerOrder());
+                existing.setIsMarked(answer.getIsMarked());
+                return updateById(existing);
             } else {
                 // 插入新答案
                 return save(answer);
             }
         } catch (Exception e) {
-            log.error("保存答案失败", e);
+            log.error("保存答案失败: sessionId={}, questionId={}",
+                     answer.getSessionId(), answer.getQuestionId(), e);
             return false;
         }
     }

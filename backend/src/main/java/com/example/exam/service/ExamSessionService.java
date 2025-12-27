@@ -79,5 +79,23 @@ public interface ExamSessionService extends IService<ExamSession> {
      * @param sessionId 会话ID
      */
     void updateHeartbeat(String sessionId);
+
+    /**
+     * 记录违规行为
+     *
+     * @param sessionId 会话ID
+     * @param violationType 违规类型
+     * @param violationDetail 详细信息
+     * @param severity 严重程度
+     * @return 当前违规总次数
+     */
+    int recordViolation(String sessionId, String violationType, String violationDetail, Integer severity);
+
+    /**
+     * 执行自动阅卷
+     *
+     * @param sessionId 会话ID
+     */
+    void doAutoGrading(String sessionId);
 }
 

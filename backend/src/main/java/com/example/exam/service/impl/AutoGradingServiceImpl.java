@@ -5,6 +5,7 @@ import com.example.exam.entity.exam.ExamAnswer;
 import com.example.exam.entity.question.Question;
 import com.example.exam.entity.question.QuestionOption;
 import com.example.exam.mapper.exam.ExamAnswerMapper;
+import com.example.exam.mapper.question.QuestionMapper;
 import com.example.exam.mapper.question.QuestionOptionMapper;
 import com.example.exam.service.AutoGradingService;
 import lombok.RequiredArgsConstructor;
@@ -33,14 +34,16 @@ public class AutoGradingServiceImpl implements AutoGradingService {
 
     private final QuestionOptionMapper questionOptionMapper;
     private final ExamAnswerMapper examAnswerMapper;
+    private final QuestionMapper questionMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal gradeQuestion(Question question, ExamAnswer answer) {
         QuestionType questionType = question.getQuestionType();
 
-        // 主观题不自动判分
-        if (questionType == QuestionType.SUBJECTIVE) {
+        // 题目类型为空或主观题不自动判分，直接返回，不更新分数
+        if (questionType == null || questionType == QuestionType.SUBJECTIVE) {
+            log.info("主观题跳过自动批改: questionId={}", question.getQuestionId());
             return BigDecimal.ZERO;
         }
 
@@ -66,12 +69,18 @@ public class AutoGradingServiceImpl implements AutoGradingService {
             case FILL_BLANK:
                 score = gradeFillBlank(question, answer);
                 break;
+            default:
+                // 未知题型不处理
+                log.warn("未知题型，跳过批改: questionId={}, type={}", question.getQuestionId(), questionType);
+                return BigDecimal.ZERO;
         }
 
-        // 更新答题记录
+        // 只有客观题才更新答题记录的分数
         answer.setScore(score);
         answer.setIsCorrect(score.compareTo(BigDecimal.ZERO) > 0 ? 1 : 0);
         examAnswerMapper.updateById(answer);
+
+        log.info("客观题自动批改完成: questionId={}, score={}", question.getQuestionId(), score);
 
         return score;
     }
@@ -85,10 +94,12 @@ public class AutoGradingServiceImpl implements AutoGradingService {
         BigDecimal totalScore = BigDecimal.ZERO;
 
         for (ExamAnswer answer : answers) {
-            // 查询题目信息
-            Question question = new Question();
-            question.setQuestionId(answer.getQuestionId());
-            // TODO: 从QuestionService获取题目详情
+            // 从数据库获取完整的题目信息
+            Question question = questionMapper.selectById(answer.getQuestionId());
+            if (question == null) {
+                log.warn("题目不存在，跳过批改: questionId={}", answer.getQuestionId());
+                continue;
+            }
 
             BigDecimal score = gradeQuestion(question, answer);
             totalScore = totalScore.add(score);

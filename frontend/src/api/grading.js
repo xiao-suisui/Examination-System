@@ -8,7 +8,7 @@ import request from '@/utils/request'
 export default {
   /**
    * 查询待阅卷列表
-   * @param {Object} params {page, size, examId}
+   * @param {Object} params {current, size, examId, questionId, teacherId}
    * @returns {Promise}
    */
   getPendingGradingList(params) {
@@ -21,14 +21,14 @@ export default {
 
   /**
    * 单题阅卷
-   * @param {Object} data {answerId, score, remark}
+   * @param {Object} params {answerId, score, comment, teacherId}
    * @returns {Promise}
    */
-  gradeAnswer(data) {
+  gradeAnswer(params) {
     return request({
       url: `/grading/grade`,
       method: `post`,
-      data
+      params
     })
   },
 
@@ -47,27 +47,30 @@ export default {
 
   /**
    * 我的阅卷任务
-   * @param {Object} params {page, size}
+   * @param {number} teacherId 教师ID
    * @returns {Promise}
    */
-  getMyTasks(params) {
+  getMyTasks(teacherId) {
     return request({
       url: `/grading/my-tasks`,
       method: `get`,
-      params
+      params: { teacherId }
     })
   },
 
   /**
    * 分配阅卷任务
-   * @param {Object} data {examId, teacherIds, questionIds}
+   * @param {number} examId 考试ID
+   * @param {number} questionId 题目ID
+   * @param {Array} teacherIds 教师ID列表
    * @returns {Promise}
    */
-  assignTasks(data) {
+  assignTasks(examId, questionId, teacherIds) {
     return request({
       url: `/grading/assign`,
       method: `post`,
-      data
+      params: { examId, questionId },
+      data: teacherIds
     })
   },
 
@@ -82,7 +85,6 @@ export default {
       method: `get`
     })
   },
-
   /**
    * 成绩复核请求
    * @param {Object} data {sessionId, reason}

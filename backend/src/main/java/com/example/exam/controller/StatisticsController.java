@@ -136,5 +136,15 @@ public class StatisticsController {
         Object dashboardData = statisticsService.getDashboardData(userId, role);
         return Result.success(dashboardData);
     }
+
+    @Operation(summary = "违规统计", description = "统计考试的违规行为数据")
+    @RequirePermission(value = "statistics:view", desc = "查看统计")
+    @GetMapping("/exam/{examId}/violations")
+    public Result<Object> violationStatistics(
+            @Parameter(description = "考试ID", required = true) @PathVariable Long examId) {
+        Object statistics = ((com.example.exam.service.impl.StatisticsServiceImpl) statisticsService)
+                .getViolationStatistics(examId);
+        return Result.success(statistics);
+    }
 }
 

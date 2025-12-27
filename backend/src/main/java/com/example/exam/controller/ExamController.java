@@ -53,10 +53,10 @@ public class ExamController {
     @Operation(summary = "查询考试详情", description = "根据ID查询考试的详细信息")
     @RequirePermission(value = "exam:view", desc = "查看考试")
     @GetMapping("/{id}")
-    public Result<Exam> getById(
+    public Result<com.example.exam.dto.ExamDTO> getById(
             @Parameter(description = "考试ID", required = true) @PathVariable Long id) {
-        Exam exam = examService.getById(id);
-        return exam != null ? Result.success(exam) : Result.error("考试不存在");
+        com.example.exam.dto.ExamDTO examDTO = examService.getExamDTOById(id);
+        return examDTO != null ? Result.success(examDTO) : Result.error("考试不存在");
     }
 
     @Operation(summary = "创建考试", description = "创建新的考试，指定试卷、时间、参与人等信息")

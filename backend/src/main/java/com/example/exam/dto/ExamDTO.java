@@ -43,6 +43,12 @@ public class ExamDTO {
     @Schema(description = "试卷名称")
     private String paperName;
 
+    @Schema(description = "所属科目ID")
+    private Long subjectId;
+
+    @Schema(description = "所属科目名称")
+    private String subjectName;
+
     @Schema(description = "开始时间")
     private LocalDateTime startTime;
 

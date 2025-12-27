@@ -108,8 +108,13 @@ import {
   Timer, Calendar, Clock, Warning, Monitor, CopyDocument,
   Cellphone, CircleCheck, QuestionFilled, DocumentChecked
 } from '@element-plus/icons-vue'
+import examApi from  '@/api/exam'
+import studentExamApi from '@/api/studentExam'
+import { useAuthStore } from '@/stores/modules/auth'
+
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const examInfo = ref({})
 const hasReadRules = ref(false)
@@ -144,12 +149,13 @@ const startButtonText = computed(() => {
 // 获取考试详情
 const getDetail = async () => {
   try {
-    const res = await getExamDetail(route.params.examId)
+    const res = await examApi.getById(route.params.examId)
     if (res.code === 200) {
       examInfo.value = res.data
       updateRemainingTime()
     }
   } catch (error) {
+    console.error('获取考试信息失败:', error)
     ElMessage.error('获取考试信息失败')
   }
 }
@@ -189,25 +195,32 @@ const handleStartExam = async () => {
 
     starting.value = true
 
+    // 获取当前用户ID
+    const userId = authStore.userId
+    if (!userId) {
+      ElMessage.error('请先登录')
+      router.push('/login')
+      return
+    }
+
     // 创建考试会话
-    const res = await api.examSession.create({
-      examId: route.params.examId
-    })
+    const res = await studentExamApi.startExam(route.params.examId, userId)
 
     if (res.code === 200) {
-      const sessionId = res.data
+      const session = res.data
       ElMessage.success('进入考试')
 
       // 跳转到答题页面
       router.push({
-        name: 'ExamPaper',
-        params: { sessionId }
+        name: 'StudentExamPaper',
+        params: { sessionId: session.sessionId }
       })
     } else {
       ElMessage.error(res.message || '创建考试会话失败')
     }
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('开始考试失败:', error)
       ElMessage.error('开始考试失败')
     }
   } finally {

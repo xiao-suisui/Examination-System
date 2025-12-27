@@ -3,11 +3,22 @@
     <el-card shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>考生管理</span>
-          <el-button type="primary" @click="showAddDialog = true">
-            <el-icon><Plus /></el-icon>
-            添加考生
-          </el-button>
+          <span>考生管理 ({{ students.length }})</span>
+          <div class="header-actions">
+            <el-button
+              v-if="subjectId"
+              type="success"
+              @click="handleImportFromSubject"
+              :loading="importing"
+            >
+              <el-icon><Download /></el-icon>
+              从科目导入
+            </el-button>
+            <el-button type="primary" @click="showAddDialog = true">
+              <el-icon><Plus /></el-icon>
+              添加考生
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -19,8 +30,17 @@
         style="width: 100%"
       >
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="userId" label="考生ID" width="100" />
-        <el-table-column prop="userName" label="姓名" />
+        <el-table-column prop="userName" label="姓名" width="120" />
+        <el-table-column prop="username" label="学号" width="150">
+          <template #default="{ row }">
+            {{ row.username || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="orgName" label="班级" width="150">
+          <template #default="{ row }">
+            {{ row.orgName || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="examStatus" label="考试状态" width="120">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.examStatus)">
@@ -28,15 +48,24 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="finalScore" label="最终成绩" width="100" />
-        <el-table-column prop="passStatus" label="及格状态" width="100">
+        <el-table-column prop="finalScore" label="最终成绩" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.passStatus === 1 ? 'success' : 'danger'">
-              {{ row.passStatus === 1 ? '及格' : '不及格' }}
-            </el-tag>
+            {{ row.finalScore !== null && row.finalScore !== undefined ? row.finalScore : '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="reexamCount" label="补考次数" width="100" />
+        <el-table-column prop="passStatus" label="及格状态" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.passStatus !== null && row.passStatus !== undefined" :type="row.passStatus === 1 ? 'success' : 'danger'">
+              {{ row.passStatus === 1 ? '及格' : '不及格' }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="reexamCount" label="补考次数" width="100">
+          <template #default="{ row }">
+            {{ row.reexamCount || 0 }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button
@@ -55,7 +84,7 @@
     <el-dialog
       v-model="showAddDialog"
       title="添加考生"
-      width="700px"
+      width="900px"
       @close="handleDialogClose"
     >
       <el-alert
@@ -65,34 +94,64 @@
         style="margin-bottom: 20px"
       >
         <template #default>
-          <div>请输入学生姓名或学号进行搜索，可以一次选择多个考生添加到考试中。</div>
+          <div>支持按班级筛选或搜索学生，可以一次选择多个考生添加到考试中。</div>
         </template>
       </el-alert>
 
       <el-form :model="addForm" label-width="100px">
+        <el-form-item label="筛选条件">
+          <el-row :gutter="10">
+            <el-col :span="12">
+              <el-select
+                v-model="filterOrgId"
+                filterable
+                placeholder="按班级筛选"
+                @change="handleFilterChange"
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="org in orgList"
+                  :key="org.orgId"
+                  :label="org.orgName"
+                  :value="org.orgId"
+                />
+              </el-select>
+            </el-col>
+            <el-col :span="12">
+              <el-input
+                v-model="searchKeyword"
+                placeholder="搜索学生姓名或学号"
+                @input="handleFilterChange"
+                clearable
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+            </el-col>
+          </el-row>
+        </el-form-item>
         <el-form-item label="选择考生" required>
           <el-select
             v-model="addForm.userIds"
             multiple
             filterable
-            remote
-            reserve-keyword
-            placeholder="请输入学生姓名或学号搜索"
-            :remote-method="searchStudents"
-            :loading="searchLoading"
+            placeholder="请选择学生（可多选）"
             style="width: 100%"
-            clearable
+            :loading="searchLoading"
           >
             <el-option
-              v-for="student in studentOptions"
+              v-for="student in availableStudents"
               :key="student.userId"
-              :label="`${student.realName} (${student.username})`"
+              :label="`${student.realName}（${student.username}）${student.orgName ? ' - ' + student.orgName : ''}`"
               :value="student.userId"
             >
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span>{{ student.realName }}</span>
                 <span style="color: #8492a6; font-size: 13px; margin-left: 10px">
                   {{ student.username }}
+                  <span v-if="student.orgName" style="margin-left: 8px">· {{ student.orgName }}</span>
                 </span>
               </div>
             </el-option>
@@ -111,7 +170,7 @@
           :loading="submitting"
           :disabled="addForm.userIds.length === 0"
         >
-          确定添加
+          确定添加（{{ addForm.userIds.length }}）
         </el-button>
       </template>
     </el-dialog>
@@ -119,11 +178,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Download, Search } from '@element-plus/icons-vue'
 import examUserApi from '@/api/examUser'
 import userApi from '@/api/user'
+import subjectApi from '@/api/subject'
+import organizationApi from '@/api/organization'
 
 const props = defineProps({
   examId: {
@@ -142,7 +203,12 @@ const students = ref([])
 const showAddDialog = ref(false)
 const submitting = ref(false)
 const searchLoading = ref(false)
-const studentOptions = ref([])
+const importing = ref(false)
+const availableStudents = ref([])
+const orgList = ref([])
+const filterOrgId = ref(null)
+const searchKeyword = ref('')
+
 const addForm = ref({
   userIds: []
 })
@@ -163,35 +229,142 @@ const loadStudents = async () => {
   }
 }
 
-// 搜索学生
-const searchStudents = async (query) => {
-  if (!query) {
-    studentOptions.value = []
+// 加载组织列表
+const loadOrgList = async () => {
+  try {
+    const res = await organizationApi.getTree()
+    if (res.code === 200) {
+      orgList.value = flattenOrgTree(res.data)
+    }
+  } catch (error) {
+    console.error('加载组织列表失败:', error)
+  }
+}
+
+// 扁平化组织树
+const flattenOrgTree = (nodes, result = []) => {
+  nodes.forEach(node => {
+    result.push({
+      orgId: node.orgId,
+      orgName: node.orgName,
+      orgLevel: node.orgLevel
+    })
+    if (node.children && node.children.length > 0) {
+      flattenOrgTree(node.children, result)
+    }
+  })
+  return result
+}
+
+// 加载可选学生列表
+const loadAvailableStudents = async (orgId = null, keyword = '') => {
+  try {
+    searchLoading.value = true
+
+    const params = {
+      current: 1,
+      size: 100,
+      roleId: 3 // 学生角色
+    }
+
+    // 如果有关键词，添加搜索条件
+    if (keyword) {
+      params.keyword = keyword
+    }
+
+    // 如果有组织ID，添加组织筛选
+    if (orgId) {
+      params.orgId = orgId
+    }
+
+    // 如果有科目ID，优先搜索该科目下的学生
+    if (props.subjectId && !orgId && !keyword) {
+      // 尝试获取科目的学生
+      const subjectRes = await subjectApi.getStudents(props.subjectId, {
+        current: 1,
+        size: 999
+      })
+      if (subjectRes.code === 200) {
+        availableStudents.value = subjectRes.data?.records || []
+        return
+      }
+    }
+
+    // 否则使用通用用户搜索
+    const res = await userApi.page(params)
+    if (res.code === 200 && res.data) {
+      availableStudents.value = res.data.records || []
+    }
+  } catch (error) {
+    console.error('加载可选学生列表失败:', error)
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+// 筛选条件变化
+const handleFilterChange = async () => {
+  await loadAvailableStudents(filterOrgId.value, searchKeyword.value)
+
+  // 清空已选择的学生（如果他们不在筛选结果中）
+  const filteredIds = new Set(availableStudents.value.map(s => s.userId))
+  addForm.value.userIds = addForm.value.userIds.filter(id => filteredIds.has(id))
+}
+
+// 从科目导入学生
+const handleImportFromSubject = async () => {
+  if (!props.subjectId) {
+    ElMessage.warning('未指定科目ID')
     return
   }
 
   try {
-    searchLoading.value = true
-    const params = {
+    await ElMessageBox.confirm(
+      '确定要从该科目导入所有学生吗？已存在的学生将被跳过。',
+      '从科目导入学生',
+      {
+        type: 'info',
+        confirmButtonText: '确定导入',
+        cancelButtonText: '取消'
+      }
+    )
+
+    importing.value = true
+
+    // 获取科目的所有学生
+    const res = await subjectApi.getStudents(props.subjectId, {
       current: 1,
-      size: 20,
-      keyword: query,
-      roleId: 3 // 学生角色
-    }
+      size: 999
+    })
 
-    // 如果有科目ID，只搜索该科目下的学生
-    if (props.subjectId) {
-      params.subjectId = props.subjectId
-    }
+    if (res.code === 200) {
+      const subjectStudents = res.data?.records || []
 
-    const res = await userApi.page(params)
-    if (res.code === 200 && res.data) {
-      studentOptions.value = res.data.records || []
+      if (subjectStudents.length === 0) {
+        ElMessage.info('该科目下没有学生')
+        return
+      }
+
+      // 提取学生ID
+      const studentIds = subjectStudents.map(s => s.userId)
+
+      // 批量添加到考试
+      const addRes = await examUserApi.addStudentsToExam(props.examId, studentIds)
+
+      if (addRes.code === 200) {
+        ElMessage.success(`成功从科目导入 ${studentIds.length} 名学生`)
+        loadStudents()
+      } else {
+        ElMessage.error(addRes.message || '导入失败')
+      }
     }
   } catch (error) {
-    console.error('搜索学生失败:', error)
+    if (error !== 'cancel') {
+      console.error('从科目导入失败:', error)
+      ElMessage.error('导入失败')
+    }
   } finally {
-    searchLoading.value = false
+    importing.value = false
   }
 }
 
@@ -206,7 +379,7 @@ const handleAdd = async () => {
     submitting.value = true
     const res = await examUserApi.addStudentsToExam(props.examId, addForm.value.userIds)
     if (res.code === 200) {
-      ElMessage.success('添加成功')
+      ElMessage.success(`成功添加 ${addForm.value.userIds.length} 名考生`)
       showAddDialog.value = false
       loadStudents()
     } else {
@@ -249,7 +422,9 @@ const handleRemove = async (row) => {
 // 关闭对话框
 const handleDialogClose = () => {
   addForm.value.userIds = []
-  studentOptions.value = []
+  availableStudents.value = []
+  filterOrgId.value = null
+  searchKeyword.value = ''
 }
 
 // 获取状态类型
@@ -278,6 +453,14 @@ const getStatusText = (status) => {
 onMounted(() => {
   loadStudents()
 })
+
+// 监听对话框打开，自动加载数据
+watch(showAddDialog, (newVal) => {
+  if (newVal) {
+    loadAvailableStudents()
+    loadOrgList()
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -286,6 +469,11 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
   }
 }
 </style>

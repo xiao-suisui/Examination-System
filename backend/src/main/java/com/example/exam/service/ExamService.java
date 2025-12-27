@@ -35,6 +35,15 @@ public interface ExamService extends IService<Exam> {
                                LocalDateTime startTimeBegin, LocalDateTime startTimeEnd);
 
     /**
+     * 根据ID查询考试详情（DTO）
+     * 包含试卷名称、科目名称、创建人姓名等关联信息
+     *
+     * @param examId 考试ID
+     * @return 考试DTO
+     */
+    ExamDTO getExamDTOById(Long examId);
+
+    /**
      * 发布考试
      */
     boolean publishExam(Long examId);

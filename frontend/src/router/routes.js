@@ -184,6 +184,18 @@ export default [
         }
       },
 
+      // ========== 阅卷管理 ==========
+      {
+        path: 'grading',
+        name: 'Grading',
+        component: () => import('@/views/Grading/GradingList.vue'),
+        meta: {
+          title: '阅卷管理',
+          icon: 'EditPen',
+          roles: ['TEACHER', 'ADMIN', 'ACADEMIC_ADMIN']
+        }
+      },
+
       // ========== 统计分析（教师+管理员共享） ==========
       {
         path: 'statistics',

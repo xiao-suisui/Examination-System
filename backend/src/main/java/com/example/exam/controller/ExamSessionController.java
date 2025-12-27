@@ -156,5 +156,17 @@ public class ExamSessionController {
         examSessionService.updateHeartbeat(sessionId);
         return Result.success();
     }
+
+    @Operation(summary = "记录违规行为", description = "记录考试过程中的违规行为（切屏、复制、粘贴等）")
+    @RequirePermission(value = "student:exam:take", desc = "参加考试")
+    @PostMapping("/{sessionId}/violation")
+    public Result<Integer> recordViolation(
+            @Parameter(description = "会话ID", required = true) @PathVariable String sessionId,
+            @Parameter(description = "违规类型", required = true) @RequestParam String violationType,
+            @Parameter(description = "详细信息") @RequestParam(required = false) String violationDetail,
+            @Parameter(description = "严重程度：1-轻微，2-一般，3-严重，4-非常严重，5-致命") @RequestParam(required = false) Integer severity) {
+        int totalCount = examSessionService.recordViolation(sessionId, violationType, violationDetail, severity);
+        return Result.success("违规总次数", totalCount);
+    }
 }
 

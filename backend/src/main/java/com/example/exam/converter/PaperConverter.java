@@ -33,6 +33,8 @@ public interface PaperConverter {
      * PaperDTO 转 Paper
      * 仅映射基础字段，忽略关联字段和自动填充字段
      */
+    @Mapping(target = "subjectId", ignore = true)        // 科目ID由调用方设置
+    @Mapping(target = "bankId", ignore = true)           // 题库ID由调用方设置
     @Mapping(target = "deleted", ignore = true)          // 逻辑删除字段由系统管理
     @Mapping(target = "createTime", ignore = true)       // 由 MyBatis-Plus 自动填充
     @Mapping(target = "updateTime", ignore = true)       // 由 MyBatis-Plus 自动填充
@@ -51,10 +53,12 @@ public interface PaperConverter {
      */
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "paperId", ignore = true)          // 主键不允许更新
-    @Mapping(target = "deleted", ignore = true)
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "createUserId", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
+    @Mapping(target = "subjectId", ignore = true)        // 科目ID不允许更新
+    @Mapping(target = "bankId", ignore = true)           // 题库ID不允许更新
+    @Mapping(target = "deleted", ignore = true)          // 逻辑删除字段由系统管理
+    @Mapping(target = "createTime", ignore = true)       // 创建时间不允许更新
+    @Mapping(target = "createUserId", ignore = true)     // 创建人不允许更新
+    @Mapping(target = "updateTime", ignore = true)       // 由 MyBatis-Plus 自动填充
     void updatePaperFromDTO(PaperDTO dto, @MappingTarget Paper paper);
 }
 
